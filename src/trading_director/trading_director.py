@@ -2,23 +2,38 @@ import queue
 import time
 from data_provider.data_provider import DataProvider
 from typing import Dict, Callable
-from events.events import DataEvent
+from events.events import DataEvent, SignalEvent
+from signal_generator.interfaces.signal_generator_interface import ISignalGenerator
 
 
 class TradingDirector():
 
-    def __init__(self, events_queue: queue.Queue, data_provider: DataProvider):
+    def __init__(
+        self,
+        events_queue: queue.Queue,
+        data_provider: DataProvider,
+        signal_generator: ISignalGenerator
+    ) -> None:
         self.events_queue = events_queue
         self.DATA_PROVIDER = data_provider
+        self.SIGNAL_GENERATOR = signal_generator
         self.contrinue_trading: bool = True
         self.event_handler: Dict[str, Callable] = {
             "DATA": self._handle_data_event,
+            "SIGNAL": self._handle_signal_event,
         }
 
     def _handle_data_event(self, event: DataEvent) -> None:
         print(
             f"{event.data.name} - Receiving new data from: {event.symbol} "
             f"- last close price: {event.data.close}"
+        )
+        self.SIGNAL_GENERATOR.generate_signal(event)
+
+    def _handle_signal_event(self, event: SignalEvent) -> None:
+        print(
+            f"{event.signal.name} - Generating signal for: {event.symbol} "
+            f"- signal type: {event.signal.name}"
         )
 
     def run(self) -> None:

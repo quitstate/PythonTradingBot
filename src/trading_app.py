@@ -1,17 +1,31 @@
 from platform_connector.platform_connector import PlatformConnector
 from data_provider.data_provider import DataProvider
 from trading_director.trading_director import TradingDirector
+from signal_generator.strategies.strategy_ma_crossover import StrategyMACrossover
 from queue import Queue
 
 if __name__ == "__main__":
 
     symbols = ["EURUSD", "AUDUSD"]
     timeframe = "M1"
+    slow_ma_period = 50
+    fast_ma_period = 25
 
     events_queue = Queue()
 
     CONNECT = PlatformConnector(symbol_list=symbols)
     DATA_PROVIDER = DataProvider(events_queue=events_queue, symbol_list=symbols, timeframe=timeframe)
+    SIGNAL_GENERATOR = StrategyMACrossover(
+        events_queue=events_queue,
+        data_provider=DATA_PROVIDER,
+        timeframe=timeframe,
+        fast_ma_period=fast_ma_period,
+        slow_ma_period=slow_ma_period
+    )
 
-    TRADING_DIRECTOR = TradingDirector(events_queue=events_queue, data_provider=DATA_PROVIDER)
+    TRADING_DIRECTOR = TradingDirector(
+        events_queue=events_queue,
+        data_provider=DATA_PROVIDER,
+        signal_generator=SIGNAL_GENERATOR
+    )
     TRADING_DIRECTOR.run()
