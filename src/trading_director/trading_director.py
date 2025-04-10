@@ -2,7 +2,8 @@ import queue
 import time
 from data_provider.data_provider import DataProvider
 from typing import Dict, Callable
-from events.events import DataEvent, SignalEvent
+from events.events import DataEvent, SignalEvent, SizingEvent
+from position_sizer.position_sizer import PositionSizer
 from signal_generator.interfaces.signal_generator_interface import ISignalGenerator
 
 
@@ -12,15 +13,18 @@ class TradingDirector():
         self,
         events_queue: queue.Queue,
         data_provider: DataProvider,
-        signal_generator: ISignalGenerator
+        signal_generator: ISignalGenerator,
+        position_sizer: PositionSizer,
     ) -> None:
         self.events_queue = events_queue
         self.DATA_PROVIDER = data_provider
         self.SIGNAL_GENERATOR = signal_generator
+        self.POSITION_SIZER = position_sizer
         self.contrinue_trading: bool = True
         self.event_handler: Dict[str, Callable] = {
             "DATA": self._handle_data_event,
             "SIGNAL": self._handle_signal_event,
+            "SIZING": self._handle_sizing_event,
         }
 
     def _handle_data_event(self, event: DataEvent) -> None:
@@ -34,6 +38,13 @@ class TradingDirector():
         print(
             f"{event.signal.name} - Generating signal for: {event.symbol} "
             f"- signal type: {event.signal.name}"
+        )
+        self.POSITION_SIZER.size_signal(event)
+
+    def _handle_sizing_event(self, event: SizingEvent) -> None:
+        print(
+            f"{event.signal.name} - Sizing for: {event.symbol} "
+            f"- position size: {event.volume}"
         )
 
     def run(self) -> None:

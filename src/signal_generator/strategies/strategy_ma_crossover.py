@@ -46,7 +46,7 @@ class StrategyMACrossover(ISignalGenerator):
             take_profit=take_profit
         )
         self.events_queue.put(signal_event)
-        print(f"Signal generated: {signal_event}")
+        print(f"Signal generated: {signal_event.signal} for {signal_event.symbol}")
 
     def generate_signal(self, data_event: DataEvent) -> None:
         symbol = data_event.symbol

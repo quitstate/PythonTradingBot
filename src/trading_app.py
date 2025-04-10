@@ -2,6 +2,9 @@ from platform_connector.platform_connector import PlatformConnector
 from data_provider.data_provider import DataProvider
 from trading_director.trading_director import TradingDirector
 from signal_generator.strategies.strategy_ma_crossover import StrategyMACrossover
+from position_sizer.position_sizer import PositionSizer
+from position_sizer.properties.position_sizer_properties import MinSizingProps
+
 from queue import Queue
 
 if __name__ == "__main__":
@@ -23,9 +26,16 @@ if __name__ == "__main__":
         slow_ma_period=slow_ma_period
     )
 
+    POSITION_SIZER = PositionSizer(
+        events_queue=events_queue,
+        data_provider=DATA_PROVIDER,
+        sizing_properties=MinSizingProps()
+    )
+
     TRADING_DIRECTOR = TradingDirector(
         events_queue=events_queue,
         data_provider=DATA_PROVIDER,
-        signal_generator=SIGNAL_GENERATOR
+        signal_generator=SIGNAL_GENERATOR,
+        position_sizer=POSITION_SIZER,
     )
     TRADING_DIRECTOR.run()
