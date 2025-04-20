@@ -4,13 +4,15 @@ from portfolio.portfolio import Portfolio
 from trading_director.trading_director import TradingDirector
 from signal_generator.strategies.strategy_ma_crossover import StrategyMACrossover
 from position_sizer.position_sizer import PositionSizer
-from position_sizer.properties.position_sizer_properties import MinSizingProps
+from position_sizer.properties.position_sizer_properties import FixedSizingProps
+from risk_manager.risk_manager import RiskManager
+from risk_manager.properties.risk_manager_properties import MaxLeverageFactorRiskProps
 
 from queue import Queue
 
 if __name__ == "__main__":
 
-    symbols = ["EURUSD", "AUDUSD"]
+    symbols = ["EURUSD"]
     timeframe = "M1"
     slow_ma_period = 50
     fast_ma_period = 25
@@ -36,7 +38,14 @@ if __name__ == "__main__":
     POSITION_SIZER = PositionSizer(
         events_queue=events_queue,
         data_provider=DATA_PROVIDER,
-        sizing_properties=MinSizingProps()
+        sizing_properties=FixedSizingProps(volume=0.10)
+    )
+
+    RISK_MANAGER = RiskManager(
+        events_queue=events_queue,
+        data_provider=DATA_PROVIDER,
+        portfolio=PORTFOLIO,
+        risk_properties=MaxLeverageFactorRiskProps(max_leverage_factor=5)
     )
 
     TRADING_DIRECTOR = TradingDirector(
@@ -44,5 +53,7 @@ if __name__ == "__main__":
         data_provider=DATA_PROVIDER,
         signal_generator=SIGNAL_GENERATOR,
         position_sizer=POSITION_SIZER,
+        risk_manager=RISK_MANAGER,
     )
+
     TRADING_DIRECTOR.run()
