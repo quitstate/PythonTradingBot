@@ -48,8 +48,12 @@ class RiskManager(IRiskManager):
 
         total_value = 0.0
 
+        print(current_positions)
+
         for position in current_positions:
-            total_value += self._compute_value_of_position_in_account_currency()
+            total_value += self._compute_value_of_position_in_account_currency(
+                position.symbol, position.volume, position.type
+            )
 
         return total_value
 

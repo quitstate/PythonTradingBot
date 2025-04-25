@@ -2,6 +2,7 @@ from portfolio.portfolio import Portfolio
 from ..interfaces.signal_generator_interface import ISignalGenerator
 from data_provider.data_provider import DataProvider
 from events.events import DataEvent, SignalEvent
+from order_executor.order_executor import OrderExecutor
 from queue import Queue
 
 
@@ -12,6 +13,7 @@ class StrategyMACrossover(ISignalGenerator):
         events_queue: Queue,
         data_provider: DataProvider,
         portfolio: Portfolio,
+        order_executor: OrderExecutor,
         timeframe: str,
         fast_ma_period: int,
         slow_ma_period: int
@@ -19,6 +21,7 @@ class StrategyMACrossover(ISignalGenerator):
         self.events_queue = events_queue
         self.DATA_PROVIDER = data_provider
         self.PORTFOLIO = portfolio
+        self.ORDER_EXECUTOR = order_executor
         self.timeframe = timeframe
         self.fast_ma_period = fast_ma_period if fast_ma_period > 1 else 2
         self.slow_ma_period = slow_ma_period if slow_ma_period > 2 else 3
@@ -62,9 +65,13 @@ class StrategyMACrossover(ISignalGenerator):
         slow_ma = bars['close'].mean()
 
         if open_positions['LONG'] == 0 and fast_ma > slow_ma:
+            if open_positions['SHORT'] > 0:
+                self.ORDER_EXECUTOR.close_strategy_short_positions_by_symbol(symbol)
             signal = 'BUY'
 
         elif open_positions['SHORT'] == 0 and fast_ma < slow_ma:
+            if open_positions['LONG'] > 0:
+                self.ORDER_EXECUTOR.close_strategy_long_positions_by_symbol(symbol)
             signal = 'SELL'
 
         else:

@@ -7,6 +7,7 @@ from position_sizer.position_sizer import PositionSizer
 from position_sizer.properties.position_sizer_properties import FixedSizingProps
 from risk_manager.risk_manager import RiskManager
 from risk_manager.properties.risk_manager_properties import MaxLeverageFactorRiskProps
+from order_executor.order_executor import OrderExecutor
 
 from queue import Queue
 
@@ -14,8 +15,8 @@ if __name__ == "__main__":
 
     symbols = ["EURUSD"]
     timeframe = "M1"
-    slow_ma_period = 50
-    fast_ma_period = 25
+    slow_ma_period = 10
+    fast_ma_period = 5
     magic_number = 12345
 
     events_queue = Queue()
@@ -26,10 +27,16 @@ if __name__ == "__main__":
 
     PORTFOLIO = Portfolio(magic_number=magic_number)
 
+    ORDER_EXECUTOR = OrderExecutor(
+        events_queue=events_queue,
+        portfolio=PORTFOLIO,
+    )
+
     SIGNAL_GENERATOR = StrategyMACrossover(
         events_queue=events_queue,
         data_provider=DATA_PROVIDER,
         portfolio=PORTFOLIO,
+        order_executor=ORDER_EXECUTOR,
         timeframe=timeframe,
         fast_ma_period=fast_ma_period,
         slow_ma_period=slow_ma_period
@@ -54,6 +61,7 @@ if __name__ == "__main__":
         signal_generator=SIGNAL_GENERATOR,
         position_sizer=POSITION_SIZER,
         risk_manager=RISK_MANAGER,
+        order_executor=ORDER_EXECUTOR
     )
 
     TRADING_DIRECTOR.run()

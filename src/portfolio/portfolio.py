@@ -21,7 +21,7 @@ class Portfolio():
 
         for position in mt5.positions_get():
             if position.magic == self.magic:
-                return positions.append(position)
+                positions.append(position)
 
         return tuple(positions)
 

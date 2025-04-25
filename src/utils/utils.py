@@ -1,10 +1,18 @@
 import MetaTrader5 as mt5
+from datetime import datetime
 
 
 class Utils():
 
     def __init__(self):
         pass
+
+    @staticmethod
+    def dateprint() -> str:
+        """
+        Returns the current date and time as a formatted string.
+        """
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
     def convert_currency_amount_to_another_currency(
