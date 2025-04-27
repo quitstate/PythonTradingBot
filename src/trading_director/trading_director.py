@@ -14,6 +14,7 @@ from position_sizer.position_sizer import PositionSizer
 from signal_generator.interfaces.signal_generator_interface import ISignalGenerator
 from risk_manager.risk_manager import RiskManager
 from order_executor.order_executor import OrderExecutor
+from notifications.notifications import NotificationService
 from utils.utils import Utils
 
 
@@ -26,7 +27,8 @@ class TradingDirector():
         signal_generator: ISignalGenerator,
         position_sizer: PositionSizer,
         risk_manager: RiskManager,
-        order_executor: OrderExecutor
+        order_executor: OrderExecutor,
+        notification_service: NotificationService
     ) -> None:
         self.events_queue = events_queue
         self.DATA_PROVIDER = data_provider
@@ -34,6 +36,7 @@ class TradingDirector():
         self.POSITION_SIZER = position_sizer
         self.RISK_MANAGER = risk_manager
         self.ORDER_EXECUTOR = order_executor
+        self.NOTIFICATION = notification_service
         self.contrinue_trading: bool = True
         self.event_handler: Dict[str, Callable] = {
             "DATA": self._handle_data_event,
@@ -91,10 +94,24 @@ class TradingDirector():
         Process execution or pending order events.
         This method is a placeholder for future implementation.
         """
-        print(
-            f"{Utils.dateprint()} - Processing EXECUTION or PENDING ORDER EVENT for: {event.signal} "
-            f"in {event.symbol} with volume: {event.volume} at price: {event.fill_price}  "
-        )
+        if isinstance(event, ExecutionEvent):
+            self.NOTIFICATION.send_notification(
+                title=f"{event.symbol} - MARKET ORDER",
+                message=(
+                    f"Execution event for {event.symbol} with volume {event.volume} "
+                    f"at price {event.fill_price}"
+                )
+            )
+        elif isinstance(event, PlacedPendingOrderEvent):
+            self.NOTIFICATION.send_notification(
+                title=f"{event.symbol} - PENDING ORDER",
+                message=(
+                    f"Pending order event for {event.symbol} with volume {event.volume} "
+                    f"at price {event.target_price}"
+                )
+            )
+        else:
+            print(f"Unknown event type: {type(event)}")
 
     def run(self) -> None:
         """

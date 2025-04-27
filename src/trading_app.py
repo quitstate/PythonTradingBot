@@ -1,3 +1,4 @@
+import os
 from platform_connector.platform_connector import PlatformConnector
 from data_provider.data_provider import DataProvider
 from portfolio.portfolio import Portfolio
@@ -8,6 +9,7 @@ from position_sizer.properties.position_sizer_properties import FixedSizingProps
 from risk_manager.risk_manager import RiskManager
 from risk_manager.properties.risk_manager_properties import MaxLeverageFactorRiskProps
 from order_executor.order_executor import OrderExecutor
+from notifications.notifications import NotificationService, TelegramNotificationProperties
 
 from queue import Queue
 
@@ -55,13 +57,19 @@ if __name__ == "__main__":
         risk_properties=MaxLeverageFactorRiskProps(max_leverage_factor=5)
     )
 
+    NOTIFICATION = NotificationService(properties=TelegramNotificationProperties(
+        token=os.getenv("TOKEN_BOT"),
+        chat_id=os.getenv("CHAT_ID"),
+    ))
+
     TRADING_DIRECTOR = TradingDirector(
         events_queue=events_queue,
         data_provider=DATA_PROVIDER,
         signal_generator=SIGNAL_GENERATOR,
         position_sizer=POSITION_SIZER,
         risk_manager=RISK_MANAGER,
-        order_executor=ORDER_EXECUTOR
+        order_executor=ORDER_EXECUTOR,
+        notification_service=NOTIFICATION
     )
 
     TRADING_DIRECTOR.run()
