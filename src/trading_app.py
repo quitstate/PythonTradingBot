@@ -3,7 +3,8 @@ from platform_connector.platform_connector import PlatformConnector
 from data_provider.data_provider import DataProvider
 from portfolio.portfolio import Portfolio
 from trading_director.trading_director import TradingDirector
-from signal_generator.strategies.strategy_ma_crossover import StrategyMACrossover
+from signal_generator.signal_generator import SignalGenerator
+from signal_generator.properties.signal_generator_properties import MACrossoverProps
 from position_sizer.position_sizer import PositionSizer
 from position_sizer.properties.position_sizer_properties import FixedSizingProps
 from risk_manager.risk_manager import RiskManager
@@ -17,8 +18,8 @@ if __name__ == "__main__":
 
     symbols = ["EURUSD"]
     timeframe = "M1"
-    slow_ma_period = 10
-    fast_ma_period = 5
+    slow_ma_period = 50
+    fast_ma_period = 10
     magic_number = 12345
 
     events_queue = Queue()
@@ -34,14 +35,16 @@ if __name__ == "__main__":
         portfolio=PORTFOLIO,
     )
 
-    SIGNAL_GENERATOR = StrategyMACrossover(
+    SIGNAL_GENERATOR = SignalGenerator(
         events_queue=events_queue,
         data_provider=DATA_PROVIDER,
         portfolio=PORTFOLIO,
         order_executor=ORDER_EXECUTOR,
-        timeframe=timeframe,
-        fast_ma_period=fast_ma_period,
-        slow_ma_period=slow_ma_period
+        signal_properties=MACrossoverProps(
+            timeframe=timeframe,
+            slow_period=slow_ma_period,
+            fast_period=fast_ma_period,
+        )
     )
 
     POSITION_SIZER = PositionSizer(

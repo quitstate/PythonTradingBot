@@ -3,28 +3,18 @@ from ..interfaces.signal_generator_interface import ISignalGenerator
 from data_provider.data_provider import DataProvider
 from events.events import DataEvent, SignalEvent
 from order_executor.order_executor import OrderExecutor
-from queue import Queue
+from ..properties.signal_generator_properties import MACrossoverProps
 
 
 class StrategyMACrossover(ISignalGenerator):
 
     def __init__(
         self,
-        events_queue: Queue,
-        data_provider: DataProvider,
-        portfolio: Portfolio,
-        order_executor: OrderExecutor,
-        timeframe: str,
-        fast_ma_period: int,
-        slow_ma_period: int
+        properties: MACrossoverProps,
     ) -> None:
-        self.events_queue = events_queue
-        self.DATA_PROVIDER = data_provider
-        self.PORTFOLIO = portfolio
-        self.ORDER_EXECUTOR = order_executor
-        self.timeframe = timeframe
-        self.fast_ma_period = fast_ma_period if fast_ma_period > 1 else 2
-        self.slow_ma_period = slow_ma_period if slow_ma_period > 2 else 3
+        self.timeframe = properties.timeframe
+        self.fast_ma_period = properties.fast_period if properties.fast_period > 1 else 2
+        self.slow_ma_period = properties.slow_period if properties. slow_period > 2 else 3
 
         if self.fast_ma_period >= self.slow_ma_period:
             raise ValueError(
@@ -32,58 +22,46 @@ class StrategyMACrossover(ISignalGenerator):
                 f"Slow MA period ({self.slow_ma_period})."
             )
 
-    def _create_and_put_signal_event(
-        self,
-        symbol: str,
-        signal: str,
-        target_order: str,
-        target_price: float,
-        magic_number: int,
-        stop_loss: float,
-        take_profit: float
-    ) -> None:
-        signal_event = SignalEvent(
-            symbol=symbol,
-            signal=signal,
-            target_order=target_order,
-            target_price=target_price,
-            magic_number=magic_number,
-            stop_loss=stop_loss,
-            take_profit=take_profit
-        )
-        self.events_queue.put(signal_event)
-        print(f"Signal generated: {signal_event.signal} for {signal_event.symbol}")
+    # self.events_queue.put(signal_event)
+    # print(f"Signal generated: {signal_event.signal} for {signal_event.symbol}")
 
-    def generate_signal(self, data_event: DataEvent) -> None:
+    def generate_signal(
+        self,
+        data_event: DataEvent,
+        data_provider: DataProvider,
+        portfolio: Portfolio,
+        order_executor: OrderExecutor
+    ) -> SignalEvent:
         symbol = data_event.symbol
 
-        bars = self.DATA_PROVIDER.get_latest_closed_bars(symbol, self.timeframe, self.slow_ma_period)
+        bars = data_provider.get_latest_closed_bars(symbol, self.timeframe, self.slow_ma_period)
 
-        open_positions = self.PORTFOLIO.get_number_of_strategy_open_positions_by_symbol(symbol)
+        open_positions = portfolio.get_number_of_strategy_open_positions_by_symbol(symbol)
 
         fast_ma = bars['close'][-self.fast_ma_period:].mean()
         slow_ma = bars['close'].mean()
 
         if open_positions['LONG'] == 0 and fast_ma > slow_ma:
             if open_positions['SHORT'] > 0:
-                self.ORDER_EXECUTOR.close_strategy_short_positions_by_symbol(symbol)
+                order_executor.close_strategy_short_positions_by_symbol(symbol)
             signal = 'BUY'
 
         elif open_positions['SHORT'] == 0 and fast_ma < slow_ma:
             if open_positions['LONG'] > 0:
-                self.ORDER_EXECUTOR.close_strategy_long_positions_by_symbol(symbol)
+                order_executor.close_strategy_long_positions_by_symbol(symbol)
             signal = 'SELL'
 
         else:
             signal = ''
 
         if signal != '':
-            self._create_and_put_signal_event(
+            signal_event = SignalEvent(
                 symbol=symbol,
                 signal=signal,
                 target_order='MARKET',
                 target_price=0.0,
-                magic_number=self.PORTFOLIO.magic,
+                magic_number=portfolio.magic,
                 stop_loss=0.0,
                 take_profit=0.0
             )
+            return signal_event
