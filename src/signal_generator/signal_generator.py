@@ -2,7 +2,8 @@ from .interfaces.signal_generator_interface import ISignalGenerator
 from data_provider.data_provider import DataProvider
 from portfolio.portfolio import Portfolio
 from order_executor.order_executor import OrderExecutor
-from .properties.signal_generator_properties import BaseSignalProps, MACrossoverProps
+from .properties.signal_generator_properties import BaseSignalProps, MACrossoverProps, RSIProps
+from .strategies.strategy_rsi_mr import StrategyRSI
 from .strategies.strategy_ma_crossover import StrategyMACrossover
 from events.events import DataEvent
 from queue import Queue
@@ -26,6 +27,8 @@ class SignalGenerator(ISignalGenerator):
     def _get_signal_generator_method(self, signal_properties: BaseSignalProps) -> ISignalGenerator:
         if isinstance(signal_properties, MACrossoverProps):
             return StrategyMACrossover(properties=signal_properties)
+        elif isinstance(signal_properties, RSIProps):
+            return StrategyRSI(properties=signal_properties)
         else:
             raise ValueError(f"Unknown signal generator properties: {signal_properties}")
 

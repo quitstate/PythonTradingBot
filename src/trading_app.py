@@ -4,7 +4,7 @@ from data_provider.data_provider import DataProvider
 from portfolio.portfolio import Portfolio
 from trading_director.trading_director import TradingDirector
 from signal_generator.signal_generator import SignalGenerator
-from signal_generator.properties.signal_generator_properties import MACrossoverProps
+from signal_generator.properties.signal_generator_properties import MACrossoverProps, RSIProps
 from position_sizer.position_sizer import PositionSizer
 from position_sizer.properties.position_sizer_properties import FixedSizingProps
 from risk_manager.risk_manager import RiskManager
@@ -18,9 +18,22 @@ if __name__ == "__main__":
 
     symbols = ["EURUSD"]
     timeframe = "M1"
-    slow_ma_period = 50
-    fast_ma_period = 10
     magic_number = 12345
+
+    mac_props = MACrossoverProps(
+        timeframe=timeframe,
+        slow_period=10,
+        fast_period=5,
+    )
+
+    rsi_props = RSIProps(
+        timeframe=timeframe,
+        rsi_period=14,
+        rsi_upper=70.0,
+        rsi_lower=30.0,
+        sl_points=200,
+        tp_points=400,
+    )
 
     events_queue = Queue()
 
@@ -40,11 +53,7 @@ if __name__ == "__main__":
         data_provider=DATA_PROVIDER,
         portfolio=PORTFOLIO,
         order_executor=ORDER_EXECUTOR,
-        signal_properties=MACrossoverProps(
-            timeframe=timeframe,
-            slow_period=slow_ma_period,
-            fast_period=fast_ma_period,
-        )
+        signal_properties=rsi_props
     )
 
     POSITION_SIZER = PositionSizer(
