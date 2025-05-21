@@ -113,6 +113,20 @@ class TradingDirector():
         else:
             print(f"Unknown event type: {type(event)}")
 
+    def _handle_none_event(self, event: None) -> None:
+        """
+        Handle None events. This method is a placeholder for future implementation.
+        """
+        print("Received None event")
+        self.contrinue_trading = False
+
+    def _handle_unknown_event(self, event) -> None:
+        """
+        Handle unknown events. This method is a placeholder for future implementation.
+        """
+        print(f"Unknown event type: {type(event)}")
+        self.contrinue_trading = False
+
     def run(self) -> None:
         """
         Main loop for the trading director. It will run until the continue_trading flag is set to False.
@@ -127,14 +141,13 @@ class TradingDirector():
 
             else:
                 if event is not None:
-                    handler = self.event_handler.get(event.event_type)
+                    handler = self.event_handler.get(event.event_type, self._handle_unknown_event)
                     if handler is not None:
                         handler(event)
                     else:
                         print(f"Unhandled event type: {event.event_type}")
                 else:
-                    print("Received None event")
-                    self.contrinue_trading = False
+                    self._handle_none_event(event)
 
             time.sleep(1)  # Sleep for a short time to avoid busy waiting
 
