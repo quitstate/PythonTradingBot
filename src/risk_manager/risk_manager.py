@@ -87,7 +87,7 @@ class RiskManager(IRiskManager):
         """
         order_event = OrderEvent(
             symbol=sizing_event.symbol,
-            signal=sizing_event.signal,
+            strategy=sizing_event.strategy,
             target_order=sizing_event.target_order,
             target_price=sizing_event.target_price,
             magic_number=sizing_event.magic_number,
@@ -101,7 +101,7 @@ class RiskManager(IRiskManager):
 
         current_position_value = self._compute_current_value_of_position_in_account_currency()
 
-        position_type = mt5.ORDER_TYPE_BUY if sizing_event.signal == 'BUY' else mt5.ORDER_TYPE_SELL
+        position_type = mt5.ORDER_TYPE_BUY if sizing_event.strategy == 'BUY' else mt5.ORDER_TYPE_SELL
 
         new_position_value = self._compute_value_of_position_in_account_currency(
             sizing_event.symbol,

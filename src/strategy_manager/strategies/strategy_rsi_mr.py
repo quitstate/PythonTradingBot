@@ -1,15 +1,15 @@
 from portfolio.portfolio import Portfolio
-from ..interfaces.signal_generator_interface import ISignalGenerator
+from ..interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
-from events.events import DataEvent, SignalEvent
+from events.events import DataEvent, StrategyEvent
 from order_executor.order_executor import OrderExecutor
-from ..properties.signal_generator_properties import RSIProps
+from ..properties.strategy_manager_properties import RSIProps
 import pandas as pd
 import numpy as np
 import MetaTrader5 as mt5
 
 
-class StrategyRSI(ISignalGenerator):
+class StrategyRSI(IStrategyManager):
 
     def __init__(
         self,
@@ -56,13 +56,13 @@ class StrategyRSI(ISignalGenerator):
 
         return rsi
 
-    def generate_signal(
+    def generate_strategy(
         self,
         data_event: DataEvent,
         DATA_SOURCE: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor
-    ) -> SignalEvent:
+    ) -> StrategyEvent:
         symbol = data_event.symbol
 
         bars = DATA_SOURCE.get_latest_closed_bars(symbol, self.timeframe, self.rsi_period + 1)
@@ -78,29 +78,29 @@ class StrategyRSI(ISignalGenerator):
         if open_positions['LONG'] == 0 and rsi < self.rsi_lower:
             if open_positions['SHORT'] > 0:
                 order_executor.close_strategy_short_positions_by_symbol(symbol)
-            signal = 'BUY'
+            strategy = 'BUY'
             stop_loss = last_tick['ask'] - self.sl_points * points if self.sl_points > 0 else 0
             take_profit = last_tick['ask'] + self.tp_points * points if self.tp_points > 0 else 0
 
         elif open_positions['SHORT'] == 0 and rsi > self.rsi_upper:
             if open_positions['LONG'] > 0:
                 order_executor.close_strategy_long_positions_by_symbol(symbol)
-            signal = 'SELL'
+            strategy = 'SELL'
             stop_loss = last_tick['bid'] + self.sl_points * points if self.sl_points > 0 else 0
             take_profit = last_tick['bid'] - self.tp_points * points if self.tp_points > 0 else 0
 
         else:
-            signal = ''
+            strategy = ''
 
-        if signal != '':
+        if strategy != '':
 
-            signal_event = SignalEvent(
+            strategy_event = StrategyEvent(
                 symbol=symbol,
-                signal=signal,
+                strategy=strategy,
                 target_order='MARKET',
                 target_price=0.0,
                 magic_number=portfolio.magic,
                 stop_loss=stop_loss,
                 take_profit=take_profit
             )
-            return signal_event
+            return strategy_event

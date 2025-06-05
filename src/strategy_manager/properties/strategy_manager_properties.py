@@ -1,17 +1,17 @@
 from pydantic import BaseModel
 
 
-class BaseSignalProps(BaseModel):
+class BaseStrategyProps(BaseModel):
     pass
 
 
-class MACrossoverProps(BaseSignalProps):
+class MACrossoverProps(BaseStrategyProps):
     timeframe: str
     fast_period: int
     slow_period: int
 
 
-class RSIProps(BaseSignalProps):
+class RSIProps(BaseStrategyProps):
     timeframe: str
     rsi_period: int
     rsi_upper: float

@@ -39,7 +39,7 @@ class MaxLeverageFactorRiskManager(IRiskManager):
         else:
             print(
                 (
-                    f"The objetive position {sizing_event.signal} {sizing_event.volume}",
+                    f"The objetive position {sizing_event.strategy} {sizing_event.volume}",
                     f"New leverage factor {abs(new_leverage_factor)} exceeds "
                     f"max leverage factor {self.max_leverage_factor}."
                 )

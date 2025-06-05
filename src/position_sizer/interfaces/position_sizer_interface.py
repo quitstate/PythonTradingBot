@@ -1,9 +1,9 @@
 from typing import Protocol
-from events.events import SignalEvent
+from events.events import StrategyEvent
 from data_source.data_source import DataSource
 
 
 class IPositionSizer(Protocol):
 
-    def size_signal(self, signal_event: SignalEvent, DATA_SOURCE: DataSource) -> float | None:
+    def size_strategy(self, strategy_event: StrategyEvent, DATA_SOURCE: DataSource) -> float | None:
         ...

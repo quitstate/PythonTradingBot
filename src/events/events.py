@@ -6,14 +6,14 @@ from datetime import datetime
 
 class EventType(str, Enum):
     DATA = "DATA"
-    SIGNAL = "SIGNAL"
+    STRATEGY = "STRATEGY"
     SIZING = "SIZING"
     ORDER = "ORDER"
     EXECUTION = "EXECUTION"
     PENDING = "PENDING"
 
 
-class SignalType(str, Enum):
+class StrategyType(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
 
@@ -28,7 +28,6 @@ class BaseEvent(BaseModel):
     event_type: EventType
 
     class Config:
-        # use_enum_values = True
         arbitrary_types_allowed = True
 
 
@@ -38,10 +37,10 @@ class DataEvent(BaseEvent):
     data: pd.Series
 
 
-class SignalEvent(BaseEvent):
-    event_type: EventType = EventType.SIGNAL
+class StrategyEvent(BaseEvent):
+    event_type: EventType = EventType.STRATEGY
     symbol: str
-    signal: SignalType
+    strategy: StrategyType
     target_order: OrderType
     target_price: float
     magic_number: int
@@ -52,7 +51,7 @@ class SignalEvent(BaseEvent):
 class SizingEvent(BaseEvent):
     event_type: EventType = EventType.SIZING
     symbol: str
-    signal: SignalType
+    strategy: StrategyType
     target_order: OrderType
     target_price: float
     magic_number: int
@@ -64,7 +63,7 @@ class SizingEvent(BaseEvent):
 class OrderEvent(BaseEvent):
     event_type: EventType = EventType.ORDER
     symbol: str
-    signal: SignalType
+    strategy: StrategyType
     target_order: OrderType
     target_price: float
     magic_number: int
@@ -76,7 +75,7 @@ class OrderEvent(BaseEvent):
 class ExecutionEvent(BaseEvent):
     event_type: EventType = EventType.EXECUTION
     symbol: str
-    signal: SignalType
+    strategy: StrategyType
     fill_price: float
     fill_time: datetime
     volume: float
@@ -85,7 +84,7 @@ class ExecutionEvent(BaseEvent):
 class PlacedPendingOrderEvent(BaseEvent):
     event_type: EventType = EventType.PENDING
     symbol: str
-    signal: SignalType
+    strategy: StrategyType
     target_order: OrderType
     target_price: float
     magic_number: int

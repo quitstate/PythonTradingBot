@@ -3,8 +3,8 @@ from platform_connector.platform_connector import PlatformConnector
 from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
 from trading_director.trading_director import TradingDirector
-from signal_generator.signal_generator import SignalGenerator
-from signal_generator.properties.signal_generator_properties import MACrossoverProps, RSIProps
+from strategy_manager.strategy_manager import StrategyManager
+from strategy_manager.properties.strategy_manager_properties import MACrossoverProps, RSIProps
 from position_sizer.position_sizer import PositionSizer
 from position_sizer.properties.position_sizer_properties import FixedSizingProps
 from risk_manager.risk_manager import RiskManager
@@ -48,12 +48,12 @@ if __name__ == "__main__":
         portfolio=PORTFOLIO,
     )
 
-    SIGNAL_GENERATOR = SignalGenerator(
+    STRATEGY_MANAGER = StrategyManager(
         events_queue=events_queue,
         DATA_SOURCE=DATA_SOURCE,
         portfolio=PORTFOLIO,
         order_executor=ORDER_EXECUTOR,
-        signal_properties=rsi_props
+        strategy_properties=rsi_props
     )
 
     POSITION_SIZER = PositionSizer(
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     TRADING_DIRECTOR = TradingDirector(
         events_queue=events_queue,
         DATA_SOURCE=DATA_SOURCE,
-        signal_generator=SIGNAL_GENERATOR,
+        STRATEGY_MANAGER=STRATEGY_MANAGER,
         position_sizer=POSITION_SIZER,
         risk_manager=RISK_MANAGER,
         order_executor=ORDER_EXECUTOR,

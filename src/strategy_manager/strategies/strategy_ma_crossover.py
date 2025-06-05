@@ -1,12 +1,12 @@
 from portfolio.portfolio import Portfolio
-from ..interfaces.signal_generator_interface import ISignalGenerator
+from ..interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
-from events.events import DataEvent, SignalEvent
+from events.events import DataEvent, StrategyEvent
 from order_executor.order_executor import OrderExecutor
-from ..properties.signal_generator_properties import MACrossoverProps
+from ..properties.strategy_manager_properties import MACrossoverProps
 
 
-class StrategyMACrossover(ISignalGenerator):
+class StrategyMACrossover(IStrategyManager):
 
     def __init__(
         self,
@@ -22,13 +22,13 @@ class StrategyMACrossover(ISignalGenerator):
                 f"Slow MA period ({self.slow_ma_period})."
             )
 
-    def generate_signal(
+    def generate_strategy(
         self,
         data_event: DataEvent,
         DATA_SOURCE: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor
-    ) -> SignalEvent:
+    ) -> StrategyEvent:
         symbol = data_event.symbol
 
         bars = DATA_SOURCE.get_latest_closed_bars(symbol, self.timeframe, self.slow_ma_period)
@@ -41,24 +41,24 @@ class StrategyMACrossover(ISignalGenerator):
         if open_positions['LONG'] == 0 and fast_ma > slow_ma:
             if open_positions['SHORT'] > 0:
                 order_executor.close_strategy_short_positions_by_symbol(symbol)
-            signal = 'BUY'
+            strategy = 'BUY'
 
         elif open_positions['SHORT'] == 0 and fast_ma < slow_ma:
             if open_positions['LONG'] > 0:
                 order_executor.close_strategy_long_positions_by_symbol(symbol)
-            signal = 'SELL'
+            strategy = 'SELL'
 
         else:
-            signal = ''
+            strategy = ''
 
-        if signal != '':
-            signal_event = SignalEvent(
+        if strategy != '':
+            strategy_event = StrategyEvent(
                 symbol=symbol,
-                signal=signal,
+                strategy=strategy,
                 target_order='MARKET',
                 target_price=0.0,
                 magic_number=portfolio.magic,
                 stop_loss=0.0,
                 take_profit=0.0
             )
-            return signal_event
+            return strategy_event
