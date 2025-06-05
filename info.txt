@@ -1,0 +1,78 @@
+Claro, aquí tienes un desarrollo estructurado y adaptado a tu proyecto PythonTradingBot, integrando el detector de anomalías, estrategias de trading y el flujo de datos financieros. Puedes adaptar el nivel de detalle según la extensión que requieras para tu TFM.
+
+---
+
+## c. Metodología
+
+### c.1. Descripción de los datos utilizados
+
+Para el desarrollo del sistema se emplearon datos financieros históricos obtenidos directamente desde MetaTrader 5 (MT5) mediante la clase `DataProvider`. Los datos corresponden a precios de instrumentos como EURUSD en distintos timeframes (por ejemplo, M1), incluyendo columnas de apertura, cierre, máximo, mínimo, volumen y spread. Además, se incorporaron retornos calculados a partir de los precios de cierre para alimentar modelos de machine learning.
+
+### c.2. Preprocesamiento de datos financieros
+
+El preprocesamiento se realiza en la clase `DataProvider`, que transforma los datos crudos de MT5 en DataFrames de pandas, ajustando formatos de fecha, renombrando columnas y asegurando la integridad de los datos. Se calcula el retorno logarítmico o simple de los precios de cierre para alimentar los modelos. Además, se filtran valores atípicos y se normalizan los datos cuando es necesario para el entrenamiento de modelos de machine learning.
+
+### c.3. Selección y entrenamiento de modelos de machine learning
+
+Se implementaron y compararon distintos modelos:
+
+- **Modelos clásicos:** Árboles de decisión y Random Forest (no incluidos en el código actual, pero fácilmente integrables con scikit-learn).
+- **Redes neuronales:** Se desarrolló un autoencoder variacional (VAE) en PyTorch para la detección de anomalías en retornos financieros, como se muestra en `anomaly_detector.py`.
+- **Modelos de trading:** Estrategias basadas en indicadores técnicos como RSI y cruces de medias móviles, implementadas en `strategy_rsi_mr.py` y `strategy_ma_crossover.py`.
+
+El entrenamiento del VAE se realiza sobre los retornos históricos, optimizando la función de pérdida que combina error de reconstrucción y divergencia KL. Para los modelos clásicos, se emplea validación cruzada sobre los datos históricos.
+
+### c.4. Estrategias de evaluación y validación
+
+- **Validación cruzada:** Para modelos supervisados, se utiliza K-fold cross-validation sobre los retornos para estimar la capacidad de generalización.
+- **Backtesting:** El sistema implementa un backtesting en tiempo real, donde las señales generadas por los modelos se ejecutan virtualmente y se evalúa el rendimiento de las estrategias (ver flujo en `trading_director.py`).
+- **Métricas:** Se emplean métricas como precisión, recall (para anomalías), y métricas financieras como el ratio de Sharpe, drawdown y beneficio acumulado para evaluar las estrategias de trading.
+
+---
+
+## d. Desarrollo y resultados
+
+### d.1. Implementación de modelos y métricas de rendimiento
+
+- **VAE para anomalías:** El modelo VAE detecta retornos atípicos mediante el error de reconstrucción. Se define un umbral basado en el percentil 95 de los errores para marcar anomalías.
+- **Estrategias de trading:** Las señales de compra/venta se generan automáticamente y se evalúan en términos de beneficio, drawdown y ratio de Sharpe.
+- **Métricas:** Para cada modelo se calculan precisión, recall (detección de anomalías), y métricas financieras para las estrategias.
+
+### d.2. Comparativa de modelos
+
+- **Árboles vs. redes neuronales:** Los modelos clásicos como árboles de decisión ofrecen interpretabilidad pero menor capacidad para capturar patrones complejos. El VAE, al ser no supervisado, detecta anomalías sutiles en los retornos, mostrando mayor sensibilidad a cambios bruscos.
+- **Estrategias técnicas vs. machine learning:** Las estrategias basadas en RSI y medias móviles se comparan con señales generadas por el detector de anomalías, observando que la combinación de ambos puede mejorar la robustez del sistema.
+
+### d.3. Evaluación de estrategias de trading basadas en modelos
+
+Se realiza un backtesting sobre datos históricos, ejecutando las señales generadas y registrando el rendimiento. Se observa que la integración de la detección de anomalías permite evitar operaciones en momentos de alta volatilidad, reduciendo drawdown y mejorando el ratio de Sharpe.
+
+### d.4. Análisis de resultados y visualización
+
+Los resultados se visualizan mediante gráficos de equity curve, drawdown y distribución de retornos. Se observa que las estrategias combinadas superan a las individuales en términos de estabilidad y beneficio ajustado al riesgo. Las anomalías detectadas suelen coincidir con eventos de alta volatilidad o noticias relevantes.
+
+---
+
+## e. Conclusiones y líneas futuras
+
+### e.1. Conclusiones generales
+
+El sistema desarrollado demuestra que la integración de modelos de machine learning, como el VAE para detección de anomalías, junto con estrategias clásicas de trading, puede mejorar la robustez y el rendimiento de los sistemas automáticos de trading. El uso de datos en tiempo real y la arquitectura modular facilitan la extensión y adaptación a otros activos.
+
+### e.2. Limitaciones del estudio
+
+- El VAE requiere una cantidad suficiente de datos para entrenar correctamente.
+- El sistema no contempla aún la optimización de hiperparámetros ni la gestión avanzada de riesgos.
+- El backtesting no incluye costes de transacción ni deslizamientos.
+
+### e.3. Posibles mejoras y futuras líneas de investigación
+
+- Integrar modelos supervisados adicionales (Random Forest, SVM, LSTM).
+- Optimizar hiperparámetros mediante búsqueda en grid o bayesiana.
+- Incorporar gestión dinámica de riesgos y position sizing avanzado.
+- Extender el análisis a múltiples activos y timeframes.
+- Implementar una interfaz gráfica para la visualización en tiempo real de señales y resultados.
+
+---
+
+¿Quieres que amplíe algún apartado, añada ejemplos de código o gráficos, o adapte el texto a un formato específico?

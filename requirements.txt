@@ -6,3 +6,4 @@ MetaTrader5==5.0.4424
 python-telegram-bot==20.8
 transformers==4.39.3
 torch==2.2.2
+scikit-learn==1.4.2
