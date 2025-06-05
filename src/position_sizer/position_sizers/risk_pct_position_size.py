@@ -1,5 +1,5 @@
 from events.events import SignalEvent
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from ..interfaces.position_sizer_interface import IPositionSizer
 from ..properties.position_sizer_properties import RiskPctSizingProps
 from utils.utils import Utils
@@ -11,7 +11,7 @@ class RiskPctPositionSizer(IPositionSizer):
     def __init__(self, properties: RiskPctSizingProps):
         self.risk_pct = properties.risk_pct
 
-    def size_signal(self, signal_event: SignalEvent, data_provider: DataProvider) -> float:
+    def size_signal(self, signal_event: SignalEvent, DATA_SOURCE: DataSource) -> float:
 
         if self.risk_pct <= 0.0:
             raise ValueError("Risk percentage must be greater than 0.")
@@ -26,7 +26,7 @@ class RiskPctPositionSizer(IPositionSizer):
         symbol_info = mt5.symbol_info(signal_event.symbol)
 
         if signal_event.target_order == "MARKET":
-            last_tick = data_provider.get_latest_tick(signal_event.symbol)
+            last_tick = DATA_SOURCE.get_latest_tick(signal_event.symbol)
             entry_price = last_tick['ask'] if signal_event.signal == "BUY" else last_tick['bid']
         else:
             entry_price = signal_event.target_price

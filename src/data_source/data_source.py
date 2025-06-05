@@ -6,8 +6,8 @@ from events.events import DataEvent
 from queue import Queue
 
 
-class DataProvider():
-    """Data provider class to manage data loading and preprocessing."""
+class DataSource():
+    """Data source class to manage data loading and preprocessing."""
 
     def __init__(self, events_queue: Queue, symbol_list: list, timeframe: str):
 

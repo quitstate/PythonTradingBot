@@ -1,5 +1,5 @@
 from .interfaces.signal_generator_interface import ISignalGenerator
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
 from order_executor.order_executor import OrderExecutor
 from .properties.signal_generator_properties import BaseSignalProps, MACrossoverProps, RSIProps
@@ -13,13 +13,13 @@ class SignalGenerator(ISignalGenerator):
     def __init__(
         self,
         events_queue: Queue,
-        data_provider: DataProvider,
+        DATA_SOURCE: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor,
         signal_properties: BaseSignalProps,
     ):
         self.events_queue = events_queue
-        self.DATA_PROVIDER = data_provider
+        self.DATA_SOURCE = DATA_SOURCE
         self.PORTFOLIO = portfolio
         self.ORDER_EXECUTOR = order_executor
         self.signal_generator_method = self._get_signal_generator_method(signal_properties)
@@ -38,7 +38,7 @@ class SignalGenerator(ISignalGenerator):
     ) -> None:
         signal_event = self.signal_generator_method.generate_signal(
             data_event,
-            self.DATA_PROVIDER,
+            self.DATA_SOURCE,
             self.PORTFOLIO,
             self.ORDER_EXECUTOR,
         )

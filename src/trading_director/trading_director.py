@@ -1,6 +1,6 @@
 import queue
 import time
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from typing import Dict, Callable
 from events.events import (
     DataEvent,
@@ -23,7 +23,7 @@ class TradingDirector():
     def __init__(
         self,
         events_queue: queue.Queue,
-        data_provider: DataProvider,
+        DATA_SOURCE: DataSource,
         signal_generator: ISignalGenerator,
         position_sizer: PositionSizer,
         risk_manager: RiskManager,
@@ -31,7 +31,7 @@ class TradingDirector():
         notification_service: NotificationService
     ) -> None:
         self.events_queue = events_queue
-        self.DATA_PROVIDER = data_provider
+        self.DATA_SOURCE = DATA_SOURCE
         self.SIGNAL_GENERATOR = signal_generator
         self.POSITION_SIZER = position_sizer
         self.RISK_MANAGER = risk_manager
@@ -137,7 +137,7 @@ class TradingDirector():
                 event = self.events_queue.get(block=False)
 
             except queue.Empty:
-                self.DATA_PROVIDER.check_for_new_data()
+                self.DATA_SOURCE.check_for_new_data()
 
             else:
                 if event is not None:

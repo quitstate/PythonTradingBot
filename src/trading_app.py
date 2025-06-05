@@ -1,6 +1,6 @@
 import os
 from platform_connector.platform_connector import PlatformConnector
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
 from trading_director.trading_director import TradingDirector
 from signal_generator.signal_generator import SignalGenerator
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     CONNECT = PlatformConnector(symbol_list=symbols)
 
-    DATA_PROVIDER = DataProvider(events_queue=events_queue, symbol_list=symbols, timeframe=timeframe)
+    DATA_SOURCE = DataSource(events_queue=events_queue, symbol_list=symbols, timeframe=timeframe)
 
     PORTFOLIO = Portfolio(magic_number=magic_number)
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     SIGNAL_GENERATOR = SignalGenerator(
         events_queue=events_queue,
-        data_provider=DATA_PROVIDER,
+        DATA_SOURCE=DATA_SOURCE,
         portfolio=PORTFOLIO,
         order_executor=ORDER_EXECUTOR,
         signal_properties=rsi_props
@@ -58,13 +58,13 @@ if __name__ == "__main__":
 
     POSITION_SIZER = PositionSizer(
         events_queue=events_queue,
-        data_provider=DATA_PROVIDER,
+        DATA_SOURCE=DATA_SOURCE,
         sizing_properties=FixedSizingProps(volume=0.10)
     )
 
     RISK_MANAGER = RiskManager(
         events_queue=events_queue,
-        data_provider=DATA_PROVIDER,
+        DATA_SOURCE=DATA_SOURCE,
         portfolio=PORTFOLIO,
         risk_properties=MaxLeverageFactorRiskProps(max_leverage_factor=5)
     )
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     TRADING_DIRECTOR = TradingDirector(
         events_queue=events_queue,
-        data_provider=DATA_PROVIDER,
+        DATA_SOURCE=DATA_SOURCE,
         signal_generator=SIGNAL_GENERATOR,
         position_sizer=POSITION_SIZER,
         risk_manager=RISK_MANAGER,

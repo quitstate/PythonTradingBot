@@ -6,11 +6,11 @@ Claro, aquí tienes un desarrollo estructurado y adaptado a tu proyecto PythonTr
 
 ### c.1. Descripción de los datos utilizados
 
-Para el desarrollo del sistema se emplearon datos financieros históricos obtenidos directamente desde MetaTrader 5 (MT5) mediante la clase `DataProvider`. Los datos corresponden a precios de instrumentos como EURUSD en distintos timeframes (por ejemplo, M1), incluyendo columnas de apertura, cierre, máximo, mínimo, volumen y spread. Además, se incorporaron retornos calculados a partir de los precios de cierre para alimentar modelos de machine learning.
+Para el desarrollo del sistema se emplearon datos financieros históricos obtenidos directamente desde MetaTrader 5 (MT5) mediante la clase `DataSource`. Los datos corresponden a precios de instrumentos como EURUSD en distintos timeframes (por ejemplo, M1), incluyendo columnas de apertura, cierre, máximo, mínimo, volumen y spread. Además, se incorporaron retornos calculados a partir de los precios de cierre para alimentar modelos de machine learning.
 
 ### c.2. Preprocesamiento de datos financieros
 
-El preprocesamiento se realiza en la clase `DataProvider`, que transforma los datos crudos de MT5 en DataFrames de pandas, ajustando formatos de fecha, renombrando columnas y asegurando la integridad de los datos. Se calcula el retorno logarítmico o simple de los precios de cierre para alimentar los modelos. Además, se filtran valores atípicos y se normalizan los datos cuando es necesario para el entrenamiento de modelos de machine learning.
+El preprocesamiento se realiza en la clase `DataSource`, que transforma los datos crudos de MT5 en DataFrames de pandas, ajustando formatos de fecha, renombrando columnas y asegurando la integridad de los datos. Se calcula el retorno logarítmico o simple de los precios de cierre para alimentar los modelos. Además, se filtran valores atípicos y se normalizan los datos cuando es necesario para el entrenamiento de modelos de machine learning.
 
 ### c.3. Selección y entrenamiento de modelos de machine learning
 

@@ -1,6 +1,6 @@
 
 from events.events import SignalEvent, SizingEvent
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from .properties.position_sizer_properties import (
     BaseSizingProps,
     FixedSizingProps,
@@ -18,9 +18,9 @@ from queue import Queue
 
 class PositionSizer(IPositionSizer):
 
-    def __init__(self, events_queue: Queue, data_provider: DataProvider, sizing_properties: BaseSizingProps):
+    def __init__(self, events_queue: Queue, DATA_SOURCE: DataSource, sizing_properties: BaseSizingProps):
         self.events_queue = events_queue
-        self.DATA_PROVIDER = data_provider
+        self.DATA_SOURCE = DATA_SOURCE
         self.position_sizing_method = self._get_position_sizing_method(sizing_properties)
 
     def _get_position_sizing_method(self, sizing_properties: BaseSizingProps) -> IPositionSizer:
@@ -53,7 +53,7 @@ class PositionSizer(IPositionSizer):
 
     def size_signal(self, signal_event: SignalEvent) -> None:
 
-        volume = self.position_sizing_method.size_signal(signal_event, self.DATA_PROVIDER)
+        volume = self.position_sizing_method.size_signal(signal_event, self.DATA_SOURCE)
 
         if volume < mt5.symbol_info(signal_event.symbol).volume_min:
             volume = mt5.symbol_info(signal_event.symbol).volume_min

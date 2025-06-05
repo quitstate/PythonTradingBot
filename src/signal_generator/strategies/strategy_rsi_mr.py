@@ -1,6 +1,6 @@
 from portfolio.portfolio import Portfolio
 from ..interfaces.signal_generator_interface import ISignalGenerator
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from events.events import DataEvent, SignalEvent
 from order_executor.order_executor import OrderExecutor
 from ..properties.signal_generator_properties import RSIProps
@@ -59,19 +59,19 @@ class StrategyRSI(ISignalGenerator):
     def generate_signal(
         self,
         data_event: DataEvent,
-        data_provider: DataProvider,
+        DATA_SOURCE: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor
     ) -> SignalEvent:
         symbol = data_event.symbol
 
-        bars = data_provider.get_latest_closed_bars(symbol, self.timeframe, self.rsi_period + 1)
+        bars = DATA_SOURCE.get_latest_closed_bars(symbol, self.timeframe, self.rsi_period + 1)
 
         rsi = self.comput_rsi(bars['close'])
 
         open_positions = portfolio.get_number_of_strategy_open_positions_by_symbol(symbol)
 
-        last_tick = data_provider.get_latest_tick(symbol)
+        last_tick = DATA_SOURCE.get_latest_tick(symbol)
 
         points = mt5.symbol_info(symbol).point
 
