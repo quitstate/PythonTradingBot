@@ -7,3 +7,4 @@ python-telegram-bot==20.8
 transformers==4.39.3
 torch==2.2.2
 scikit-learn==1.4.2
+matplotlib==3.8.4

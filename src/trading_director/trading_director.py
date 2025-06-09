@@ -11,7 +11,7 @@ from events.events import (
     PlacedPendingOrderEvent,
 )
 from position_sizer.position_sizer import PositionSizer
-from strategy_manager.interfaces.strategy_manager_interface import IStrategyManager
+from strategy_manager.strategy_manager import StrategyManager
 from risk_manager.risk_manager import RiskManager
 from order_executor.order_executor import OrderExecutor
 from notifications.notifications import NotificationService
@@ -23,16 +23,16 @@ class TradingDirector():
     def __init__(
         self,
         events_queue: queue.Queue,
-        DATA_SOURCE: DataSource,
-        STRATEGY_MANAGER: IStrategyManager,
+        data_source: DataSource,
+        strategy_manager: StrategyManager,
         position_sizer: PositionSizer,
         risk_manager: RiskManager,
         order_executor: OrderExecutor,
         notification_service: NotificationService
     ) -> None:
         self.events_queue = events_queue
-        self.DATA_SOURCE = DATA_SOURCE
-        self.STRATEGY_MANAGER = STRATEGY_MANAGER
+        self.DATA_SOURCE = data_source
+        self.STRATEGY_MANAGER = strategy_manager
         self.POSITION_SIZER = position_sizer
         self.RISK_MANAGER = risk_manager
         self.ORDER_EXECUTOR = order_executor

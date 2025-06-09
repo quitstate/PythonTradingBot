@@ -13,13 +13,13 @@ class StrategyManager(IStrategyManager):
     def __init__(
         self,
         events_queue: Queue,
-        DATA_SOURCE: DataSource,
+        data_source: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor,
         strategy_properties: BaseStrategyProps,
     ):
         self.events_queue = events_queue
-        self.DATA_SOURCE = DATA_SOURCE
+        self.DATA_SOURCE = data_source
         self.PORTFOLIO = portfolio
         self.ORDER_EXECUTOR = order_executor
         self.strategy_manager_method = self._get_strategy_manager_method(strategy_properties)
@@ -46,3 +46,20 @@ class StrategyManager(IStrategyManager):
         if strategy_event is not None:
             self.events_queue.put(strategy_event)
             print(f"Signal generated: {strategy_event.strategy} for {strategy_event.symbol}")
+
+    def generate_strategy_for_backtesting(
+        self,
+        data_event: DataEvent,
+    ) -> str:
+        strategy_event = self.strategy_manager_method.generate_strategy(
+            data_event,
+            self.DATA_SOURCE,
+            self.PORTFOLIO,
+            self.ORDER_EXECUTOR,
+        )
+
+        if strategy_event is not None:
+            return strategy_event.strategy.value
+        else:
+            print(f"No signal generated for {data_event.symbol} at {data_event.data.name}")
+            return None

@@ -18,7 +18,7 @@ class RiskManager(IRiskManager):
     def __init__(
         self,
         events_queue: Queue,
-        DATA_SOURCE: DataSource,
+        data_source: DataSource,
         portfolio: Portfolio,
         risk_properties: BaseRiskProps
     ):
@@ -26,7 +26,7 @@ class RiskManager(IRiskManager):
         Initialize the RiskManager with the given configuration.
         """
         self.events_queue = events_queue
-        self.DATA_SOURCE = DATA_SOURCE
+        self.DATA_SOURCE = data_source
         self.PORTFOLIO = portfolio
         self.risk_management_method = self._get_risk_management_method(risk_properties)
 

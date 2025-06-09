@@ -50,21 +50,21 @@ if __name__ == "__main__":
 
     STRATEGY_MANAGER = StrategyManager(
         events_queue=events_queue,
-        DATA_SOURCE=DATA_SOURCE,
+        data_source=DATA_SOURCE,
         portfolio=PORTFOLIO,
         order_executor=ORDER_EXECUTOR,
-        strategy_properties=rsi_props
+        strategy_properties=mac_props
     )
 
     POSITION_SIZER = PositionSizer(
         events_queue=events_queue,
-        DATA_SOURCE=DATA_SOURCE,
+        data_source=DATA_SOURCE,
         sizing_properties=FixedSizingProps(volume=0.10)
     )
 
     RISK_MANAGER = RiskManager(
         events_queue=events_queue,
-        DATA_SOURCE=DATA_SOURCE,
+        data_source=DATA_SOURCE,
         portfolio=PORTFOLIO,
         risk_properties=MaxLeverageFactorRiskProps(max_leverage_factor=5)
     )
@@ -76,8 +76,8 @@ if __name__ == "__main__":
 
     TRADING_DIRECTOR = TradingDirector(
         events_queue=events_queue,
-        DATA_SOURCE=DATA_SOURCE,
-        STRATEGY_MANAGER=STRATEGY_MANAGER,
+        data_source=DATA_SOURCE,
+        strategy_manager=STRATEGY_MANAGER,
         position_sizer=POSITION_SIZER,
         risk_manager=RISK_MANAGER,
         order_executor=ORDER_EXECUTOR,

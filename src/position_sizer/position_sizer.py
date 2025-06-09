@@ -18,9 +18,9 @@ from queue import Queue
 
 class PositionSizer(IPositionSizer):
 
-    def __init__(self, events_queue: Queue, DATA_SOURCE: DataSource, sizing_properties: BaseSizingProps):
+    def __init__(self, events_queue: Queue, data_source: DataSource, sizing_properties: BaseSizingProps):
         self.events_queue = events_queue
-        self.DATA_SOURCE = DATA_SOURCE
+        self.DATA_SOURCE = data_source
         self.position_sizing_method = self._get_position_sizing_method(sizing_properties)
 
     def _get_position_sizing_method(self, sizing_properties: BaseSizingProps) -> IPositionSizer:
