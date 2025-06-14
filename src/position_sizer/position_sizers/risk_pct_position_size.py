@@ -11,7 +11,7 @@ class RiskPctPositionSizer(IPositionSizer):
     def __init__(self, properties: RiskPctSizingProps):
         self.risk_pct = properties.risk_pct
 
-    def size_strategy(self, strategy_event: StrategyEvent, DATA_SOURCE: DataSource) -> float:
+    def size_strategy(self, strategy_event: StrategyEvent, data_source: DataSource) -> float:
 
         if self.risk_pct <= 0.0:
             raise ValueError("Risk percentage must be greater than 0.")
@@ -26,7 +26,7 @@ class RiskPctPositionSizer(IPositionSizer):
         symbol_info = mt5.symbol_info(strategy_event.symbol)
 
         if strategy_event.target_order == "MARKET":
-            last_tick = DATA_SOURCE.get_latest_tick(strategy_event.symbol)
+            last_tick = data_source.get_latest_tick(strategy_event.symbol)
             entry_price = last_tick['ask'] if strategy_event.strategy == "BUY" else last_tick['bid']
         else:
             entry_price = strategy_event.target_price

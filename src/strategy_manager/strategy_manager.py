@@ -6,6 +6,7 @@ from .properties.strategy_manager_properties import BaseStrategyProps, MACrossov
 from .strategies.strategy_rsi_mr import StrategyRSI
 from .strategies.strategy_ma_crossover import StrategyMACrossover
 from events.events import DataEvent
+from sentiment_analyzer.sentiment_analyzer import SentimentAnalyzer
 from queue import Queue
 
 
@@ -17,11 +18,13 @@ class StrategyManager(IStrategyManager):
         portfolio: Portfolio,
         order_executor: OrderExecutor,
         strategy_properties: BaseStrategyProps,
+        sentiment_analyzer: SentimentAnalyzer | None = None,
     ):
         self.events_queue = events_queue
         self.DATA_SOURCE = data_source
         self.PORTFOLIO = portfolio
         self.ORDER_EXECUTOR = order_executor
+        self.SENTIMENT_ANALYZER = sentiment_analyzer
         self.strategy_manager_method = self._get_strategy_manager_method(strategy_properties)
 
     def _get_strategy_manager_method(self, strategy_properties: BaseStrategyProps) -> IStrategyManager:
@@ -41,6 +44,7 @@ class StrategyManager(IStrategyManager):
             self.DATA_SOURCE,
             self.PORTFOLIO,
             self.ORDER_EXECUTOR,
+            self.SENTIMENT_ANALYZER
         )
 
         if strategy_event is not None:
@@ -56,6 +60,7 @@ class StrategyManager(IStrategyManager):
             self.DATA_SOURCE,
             self.PORTFOLIO,
             self.ORDER_EXECUTOR,
+            self.SENTIMENT_ANALYZER
         )
 
         if strategy_event is not None:

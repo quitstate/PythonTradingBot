@@ -6,7 +6,7 @@ import MetaTrader5 as mt5
 
 class MinSizePositionSizer(IPositionSizer):
 
-    def size_strategy(self, strategy_event: StrategyEvent, DATA_SOURCE: DataSource) -> float:
+    def size_strategy(self, strategy_event: StrategyEvent, data_source: DataSource) -> float:
         volume = mt5.symbol_info(strategy_event.symbol).volume_min
         if volume is None:
             raise ValueError(f"Volume for symbol {strategy_event.symbol} is None")

@@ -20,7 +20,7 @@ class PositionSizer(IPositionSizer):
 
     def __init__(self, events_queue: Queue, data_source: DataSource, sizing_properties: BaseSizingProps):
         self.events_queue = events_queue
-        self.DATA_SOURCE = data_source
+        self.data_source = data_source
         self.position_sizing_method = self._get_position_sizing_method(sizing_properties)
 
     def _get_position_sizing_method(self, sizing_properties: BaseSizingProps) -> IPositionSizer:
@@ -53,7 +53,7 @@ class PositionSizer(IPositionSizer):
 
     def size_strategy(self, strategy_event: StrategyEvent) -> None:
 
-        volume = self.position_sizing_method.size_strategy(strategy_event, self.DATA_SOURCE)
+        volume = self.position_sizing_method.size_strategy(strategy_event, self.data_source)
 
         if volume < mt5.symbol_info(strategy_event.symbol).volume_min:
             volume = mt5.symbol_info(strategy_event.symbol).volume_min

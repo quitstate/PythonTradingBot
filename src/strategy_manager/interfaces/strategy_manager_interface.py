@@ -2,6 +2,7 @@ from typing import Protocol
 from events.events import DataEvent
 from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
+from sentiment_analyzer.sentiment_analyzer import SentimentAnalyzer
 from order_executor.order_executor import OrderExecutor
 from events.events import StrategyEvent
 
@@ -14,8 +15,9 @@ class IStrategyManager(Protocol):
     def generate_strategy(
         self,
         data_event: DataEvent,
-        DATA_SOURCE: DataSource,
+        data_source: DataSource,
         portfolio: Portfolio,
-        order_executor: OrderExecutor
+        order_executor: OrderExecutor,
+        sentiment_analyzer: SentimentAnalyzer | None = None
     ) -> StrategyEvent | None:
         ...

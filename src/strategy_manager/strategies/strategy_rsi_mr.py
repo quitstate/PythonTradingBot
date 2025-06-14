@@ -3,6 +3,8 @@ from ..interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
 from events.events import DataEvent, StrategyEvent
 from order_executor.order_executor import OrderExecutor
+from sentiment_analyzer.sentiment_analyzer import SentimentAnalyzer
+from datetime import datetime, timedelta
 from ..properties.strategy_manager_properties import RSIProps
 import pandas as pd
 import numpy as np
@@ -43,6 +45,7 @@ class StrategyRSI(IStrategyManager):
             self.tp_points = properties.tp_points
         else:
             self.tp_points = 0.0
+        self.last_sentiment_check_time: dict[str, datetime] = {}
 
     def comput_rsi(self, prices: pd.Series) -> float:
 
@@ -59,21 +62,59 @@ class StrategyRSI(IStrategyManager):
     def generate_strategy(
         self,
         data_event: DataEvent,
-        DATA_SOURCE: DataSource,
+        data_source: DataSource,
         portfolio: Portfolio,
-        order_executor: OrderExecutor
+        order_executor: OrderExecutor,
+        sentiment_analyzer: SentimentAnalyzer | None = None
     ) -> StrategyEvent:
         symbol = data_event.symbol
 
-        bars = DATA_SOURCE.get_latest_closed_bars(symbol, self.timeframe, self.rsi_period + 1)
+        bars = data_source.get_latest_closed_bars(symbol, self.timeframe, self.rsi_period + 1)
 
         rsi = self.comput_rsi(bars['close'])
 
         open_positions = portfolio.get_number_of_strategy_open_positions_by_symbol(symbol)
 
-        last_tick = DATA_SOURCE.get_latest_tick(symbol)
+        last_tick = data_source.get_latest_tick(symbol)
 
         points = mt5.symbol_info(symbol).point
+
+        # Variables para el sentimiento agregado
+        avg_sentiment_score = 0.0
+        sufficient_news_for_decision = False
+
+        # Controlar la frecuencia de llamadas al sentiment analyzer
+        if sentiment_analyzer:
+            current_time = datetime.now()
+            last_check_time_for_symbol = self.last_sentiment_check_time.get(symbol)
+
+            perform_sentiment_analysis = True
+            if last_check_time_for_symbol and (
+                current_time - last_check_time_for_symbol < timedelta(days=14)
+            ):
+                print(
+                    f"RSI: Sentiment analysis for {symbol} skipped, last check was on "
+                    f"{last_check_time_for_symbol.strftime('%Y-%m-%d %H:%M:%S')}."
+                )
+                perform_sentiment_analysis = False
+
+            if perform_sentiment_analysis:
+                try:
+                    print(f"RSI: Performing sentiment analysis for {symbol}.")
+                    sentiment_info = sentiment_analyzer.analyze_sentiment_last_week(
+                        query=symbol, page_size=10
+                    )
+                    self.last_sentiment_check_time[symbol] = current_time
+                    if sentiment_info and "error" not in sentiment_info:
+                        avg_sentiment_score = sentiment_info.get("average_sentiment_score", 0.0)
+                        total_analyzed = sentiment_info.get("total_analyzed", 0)
+                        sufficient_news_for_decision = total_analyzed >= 3
+                        print(
+                            f"RSI: Aggregated sentiment for {symbol} (last week): "
+                            f"Avg Score={avg_sentiment_score:.2f}, Analyzed={total_analyzed}"
+                        )
+                except Exception as e:
+                    print(f"Error getting sentiment for {symbol}: {e}")
 
         if open_positions['LONG'] == 0 and rsi < self.rsi_lower:
             if open_positions['SHORT'] > 0:
@@ -91,6 +132,23 @@ class StrategyRSI(IStrategyManager):
 
         else:
             strategy = ''
+
+        # Modificar la estrategia basada en el sentimiento agregado
+        if sufficient_news_for_decision:
+            # Ejemplo: si el sentimiento promedio es marcadamente negativo, no comprar.
+            if strategy == 'BUY' and avg_sentiment_score < -0.15:  # Umbral más estricto para RSI
+                print(
+                    f"RSI: BUY signal for {symbol} ignored due to strong overall NEGATIVE "
+                    f"sentiment (Avg Score: {avg_sentiment_score:.2f})"
+                )
+                strategy = ''
+            # Ejemplo: si el sentimiento promedio es marcadamente positivo, no vender en corto.
+            elif strategy == 'SELL' and avg_sentiment_score > 0.15:  # Umbral más estricto para RSI
+                print(
+                    f"RSI: SELL signal for {symbol} ignored due to strong overall POSITIVE "
+                    f"sentiment (Avg Score: {avg_sentiment_score:.2f})"
+                )
+                strategy = ''
 
         if strategy != '':
 
