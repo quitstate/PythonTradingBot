@@ -1,3 +1,4 @@
+from backtesting.sentiment_analyzer_mt5.sentiment_analyzer_mt5 import BacktestSentimentAnalyzer
 from portfolio.portfolio import Portfolio
 from ..interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
@@ -6,6 +7,7 @@ from order_executor.order_executor import OrderExecutor
 from sentiment_analyzer.sentiment_analyzer import SentimentAnalyzer
 from datetime import datetime, timedelta
 from ..properties.strategy_manager_properties import MACrossoverProps
+import pandas as pd
 
 
 class StrategyMACrossover(IStrategyManager):
@@ -31,7 +33,7 @@ class StrategyMACrossover(IStrategyManager):
         data_source: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor,
-        sentiment_analyzer: SentimentAnalyzer | None = None
+        sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None
     ) -> StrategyEvent:
         symbol = data_event.symbol
 
@@ -52,6 +54,11 @@ class StrategyMACrossover(IStrategyManager):
         # Controlar la frecuencia de llamadas al sentiment analyzer
         if sentiment_analyzer:
             current_time = datetime.now()
+            current_bar_timestamp = data_event.data.name
+            if isinstance(current_bar_timestamp, pd.Timestamp):
+                current_time = current_bar_timestamp.to_pydatetime()
+            else:
+                current_time = pd.Timestamp(current_bar_timestamp).to_pydatetime()
             last_check_time_for_symbol = self.last_sentiment_check_time.get(symbol)
 
             # Por defecto, intentar análisis si el sentiment_analyzer está disponible
@@ -69,9 +76,19 @@ class StrategyMACrossover(IStrategyManager):
                 sentiment_analysis_attempted_this_tick = True  # Marcar que se intentó
                 try:
                     print(f"MA Crossover: Performing sentiment analysis for {symbol}.")
-                    sentiment_info = sentiment_analyzer.analyze_sentiment_last_week(
-                        query=symbol, page_size=20
-                    )
+                    if isinstance(sentiment_analyzer, SentimentAnalyzer):
+                        sentiment_info = sentiment_analyzer.analyze_sentiment_last_week(
+                            query=symbol, page_size=20
+                        )
+                    elif isinstance(sentiment_analyzer, BacktestSentimentAnalyzer):
+                        sentiment_info = sentiment_analyzer.get_sentiment_for_bar_date(
+                            query_ticker=symbol,
+                            bar_date=bars.index[-1],
+                            lookback_days=7,
+                            articles_to_analyze=50
+                        )
+                    else:
+                        sentiment_info = None
                     self.last_sentiment_check_time[symbol] = current_time
                     if sentiment_info and "error" not in sentiment_info:
                         avg_sentiment_score = sentiment_info.get("average_sentiment_score", 0.0)
@@ -101,25 +118,25 @@ class StrategyMACrossover(IStrategyManager):
         # Solo actuar sobre el sentimiento si hay suficientes noticias analizadas
         if sentiment_analysis_attempted_this_tick:
             print(
-                f"MA Crossover: Evaluating sentiment for {symbol}. "
+                f"MA Crossover: Evaluating sentiment for {symbol} for {strategy}. "
                 f"Sufficient news: {sufficient_news_for_decision}, Avg Score: {avg_sentiment_score:.2f}, "
                 f"Analyzed: {total_analyzed}"
             )
             if sufficient_news_for_decision:
                 if (
-                    strategy == 'BUY' and avg_sentiment_score < -0.1
+                    strategy == 'BUY' and avg_sentiment_score > 0.1
                 ):  # Umbral de ejemplo para sentimiento negativo
                     print(
                         f"MA Crossover: BUY signal for {symbol} ignored due to overall "
-                        f"negative sentiment (Avg Score: {avg_sentiment_score:.2f})"
+                        f"positive sentiment (Avg Score: {avg_sentiment_score:.2f})"
                     )
                     strategy = ''
-                elif (
-                    strategy == 'SELL' and avg_sentiment_score > 0.1
-                ):  # Umbral de ejemplo para sentimiento positivo
+                elif (  # Ejemplo: Ignorar SELL si el sentimiento es muy negativo
+                    strategy == 'SELL' and avg_sentiment_score < -0.1
+                ):  # Umbral de ejemplo para sentimiento negativo
                     print(
                         f"MA Crossover: SELL signal for {symbol} ignored due to overall "
-                        f"positive sentiment (Avg Score: {avg_sentiment_score:.2f})"
+                        f"negative sentiment (Avg Score: {avg_sentiment_score:.2f})"
                     )
                     strategy = ''
                 elif strategy != '':  # Si había una señal y no fue alterada por el sentimiento

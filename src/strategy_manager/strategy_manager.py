@@ -1,3 +1,4 @@
+from backtesting.sentiment_analyzer_mt5.sentiment_analyzer_mt5 import BacktestSentimentAnalyzer
 from .interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
@@ -18,7 +19,7 @@ class StrategyManager(IStrategyManager):
         portfolio: Portfolio,
         order_executor: OrderExecutor,
         strategy_properties: BaseStrategyProps,
-        sentiment_analyzer: SentimentAnalyzer | None = None,
+        sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None,
     ):
         self.events_queue = events_queue
         self.DATA_SOURCE = data_source
@@ -50,21 +51,3 @@ class StrategyManager(IStrategyManager):
         if strategy_event is not None:
             self.events_queue.put(strategy_event)
             print(f"Signal generated: {strategy_event.strategy} for {strategy_event.symbol}")
-
-    def generate_strategy_for_backtesting(
-        self,
-        data_event: DataEvent,
-    ) -> str:
-        strategy_event = self.strategy_manager_method.generate_strategy(
-            data_event,
-            self.DATA_SOURCE,
-            self.PORTFOLIO,
-            self.ORDER_EXECUTOR,
-            self.SENTIMENT_ANALYZER
-        )
-
-        if strategy_event is not None:
-            return strategy_event.strategy.value
-        else:
-            print(f"No signal generated for {data_event.symbol} at {data_event.data.name}")
-            return None

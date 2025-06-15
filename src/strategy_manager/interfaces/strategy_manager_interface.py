@@ -1,4 +1,5 @@
 from typing import Protocol
+from backtesting.sentiment_analyzer_mt5.sentiment_analyzer_mt5 import BacktestSentimentAnalyzer
 from events.events import DataEvent
 from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
@@ -18,6 +19,6 @@ class IStrategyManager(Protocol):
         data_source: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor,
-        sentiment_analyzer: SentimentAnalyzer | None = None
+        sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None
     ) -> StrategyEvent | None:
         ...
