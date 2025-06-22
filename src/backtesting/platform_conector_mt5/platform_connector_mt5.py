@@ -1,5 +1,5 @@
 class BacktestPlatformConnector:
-    def __init__(self, initial_balance=100000.0, leverage=5):
+    def __init__(self, initial_balance=1000.0, leverage=5):
         self.balance = initial_balance
         self.equity = initial_balance
         self.leverage = leverage
