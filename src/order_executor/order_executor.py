@@ -292,7 +292,11 @@ class OrderExecutor():
         # Create the execution event
         execution_event = ExecutionEvent(
             symbol=order_result.request.symbol,
-            strategy=StrategyType.BUY if order_result.request.type == mt5.DEAL_TYPE_BUY else StrategyType.SELL,
+            strategy=(
+                StrategyType.BUY
+                if order_result.request.type == mt5.DEAL_TYPE_BUY
+                else StrategyType.SELL
+            ),
             fill_price=order_result.price,
             fill_time=fill_time if not deal else pd.to_datetime(deal.time_msc, unit='ms'),
             volume=order_result.request.volume

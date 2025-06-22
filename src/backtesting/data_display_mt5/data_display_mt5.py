@@ -19,6 +19,7 @@ class DataDisplayMT5:
         # Convert time columns if they exist, handling potential errors or NaT
         if 'entry_time' in self.trade_log.columns:
             self.trade_log['entry_time'] = pd.to_datetime(self.trade_log['entry_time'], errors='coerce')
+
         if 'exit_time' in self.trade_log.columns:
             self.trade_log['exit_time'] = pd.to_datetime(self.trade_log['exit_time'], errors='coerce')
 
@@ -184,26 +185,12 @@ class DataDisplayMT5:
         df_all_attempts = self.trade_log
         # Use self.executed_trades_log for performance metrics of executed trades
         df_executed = self.executed_trades_log
-
         metrics["Total Attempts Registered"] = len(df_all_attempts)
         if metrics["Total Attempts Registered"] == 0:
             # If there are no registered attempts, other metrics cannot be calculated.
             # Update the message to be more generic.
             metrics["Message"] = "No trade attempts were recorded."
             return {}
-
-        # New metric: Trades canceled by the sentiment analyzer
-        if "cancellation_reason" in df_all_attempts.columns:
-            cancelled_by_sentiment = df_all_attempts[
-                df_all_attempts["cancellation_reason"] == "SENTIMENT_ANALYZER"
-            ]
-            metrics["Trades Canceled by Sentiment Analyzer"] = (
-                len(cancelled_by_sentiment)
-            )
-        else:
-            metrics["Trades Canceled by Sentiment Analyzer"] = (
-                "N/A ('cancellation_reason' column not available)"
-            )
 
         # Métricas basadas en trades ejecutados
         metrics["Total Executed Trades"] = len(df_executed)
