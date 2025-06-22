@@ -116,15 +116,15 @@ class DataDisplayMT5:
     def plot_win_loss_trades_bar_chart(self, title: str = "Winning vs. Losing Trades") -> None:
         """Displays a bar chart of the number of winning and losing trades."""
         metrics = self.calculate_metrics()
-        if "Winning Trades" not in metrics or "Losing Trades" not in metrics:
+        if "Winning Trades" not in metrics or "Losing/Neutral Trades" not in metrics:
             print(
                 "Cannot plot trade count: "
-                "missing 'Winning Trades' or 'Losing Trades' metrics."
+                "missing 'Winning Trades' or 'Losing/Neutral Trades' metrics."
             )
             return
 
         labels = ['Winning', 'Losing/Neutral']
-        counts = [metrics["Winning Trades"], metrics["Losing Trades"]]
+        counts = [metrics["Winning Trades"], metrics["Losing/Neutral Trades"]]
 
         plt.figure(figsize=(8, 6))
         bars = plt.bar(labels, counts, color=['green', 'red'])
