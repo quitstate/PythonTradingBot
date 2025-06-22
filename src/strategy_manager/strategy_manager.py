@@ -1,3 +1,4 @@
+from anomaly_detector.anomaly_detector import IsolationForestAnomalyDetector
 from backtesting.sentiment_analyzer_mt5.sentiment_analyzer_mt5 import BacktestSentimentAnalyzer
 from .interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
@@ -20,12 +21,14 @@ class StrategyManager(IStrategyManager):
         order_executor: OrderExecutor,
         strategy_properties: BaseStrategyProps,
         sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None,
+        anomaly_detector: IsolationForestAnomalyDetector | None = None
     ):
         self.events_queue = events_queue
         self.DATA_SOURCE = data_source
         self.PORTFOLIO = portfolio
         self.ORDER_EXECUTOR = order_executor
         self.SENTIMENT_ANALYZER = sentiment_analyzer
+        self.ANOMALY_DETECTOR = anomaly_detector
         self.strategy_manager_method = self._get_strategy_manager_method(strategy_properties)
 
     def _get_strategy_manager_method(self, strategy_properties: BaseStrategyProps) -> IStrategyManager:
@@ -45,7 +48,8 @@ class StrategyManager(IStrategyManager):
             self.DATA_SOURCE,
             self.PORTFOLIO,
             self.ORDER_EXECUTOR,
-            self.SENTIMENT_ANALYZER
+            self.SENTIMENT_ANALYZER,
+            self.ANOMALY_DETECTOR
         )
 
         if strategy_event is not None:

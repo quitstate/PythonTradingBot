@@ -1,5 +1,6 @@
 from backtesting.sentiment_analyzer_mt5.sentiment_analyzer_mt5 import BacktestSentimentAnalyzer
 from portfolio.portfolio import Portfolio
+from anomaly_detector.anomaly_detector import IsolationForestAnomalyDetector  # + Añadir import
 from ..interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
 from events.events import DataEvent, StrategyEvent
@@ -19,7 +20,6 @@ class StrategyMACrossover(IStrategyManager):
         self.timeframe = properties.timeframe
         self.fast_ma_period = properties.fast_period if properties.fast_period > 1 else 2
         self.slow_ma_period = properties.slow_period if properties. slow_period > 2 else 3
-
         if self.fast_ma_period >= self.slow_ma_period:
             raise ValueError(
                 f"Fast MA period ({self.fast_ma_period}) must be less than "
@@ -33,16 +33,30 @@ class StrategyMACrossover(IStrategyManager):
         data_source: DataSource,
         portfolio: Portfolio,
         order_executor: OrderExecutor,
-        sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None
-    ) -> StrategyEvent:
+        sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None,
+        anomaly_detector: IsolationForestAnomalyDetector | None = None
+    ) -> StrategyEvent | None:  # La estrategia puede no devolver nada
         symbol = data_event.symbol
 
-        bars = data_source.get_latest_closed_bars(symbol, self.timeframe, self.slow_ma_period)
+        # Determinar cuántas barras se necesitan: el máximo entre slow_ma_period y
+        # anomaly_detector.window_size
+        bars_to_fetch = self.slow_ma_period
+        if anomaly_detector and anomaly_detector.trained:
+            bars_to_fetch = max(self.slow_ma_period, anomaly_detector.window_size)
+
+        bars = data_source.get_latest_closed_bars(symbol, self.timeframe, bars_to_fetch)
+
+        if len(bars) < self.slow_ma_period:  # No hay suficientes barras para el cálculo de MA
+            # print(
+            #     f"MA Crossover: Not enough bars ({len(bars)}) for MA calculation "
+            #     f"(slow_ma_period: {self.slow_ma_period}) for {symbol}."
+            # )
+            return None
 
         open_positions = portfolio.get_number_of_strategy_open_positions_by_symbol(symbol)
-
-        fast_ma = bars['close'][-self.fast_ma_period:].mean()
-        slow_ma = bars['close'].mean()
+        ma_bars = bars.iloc[-self.slow_ma_period:]  # Usar solo las barras necesarias para MA
+        fast_ma = ma_bars['close'][-self.fast_ma_period:].mean()
+        slow_ma = ma_bars['close'].mean()
 
         # Variables para el sentimiento agregado
         avg_sentiment_score = 0.0
@@ -103,11 +117,13 @@ class StrategyMACrossover(IStrategyManager):
 
         if open_positions['LONG'] == 0 and fast_ma > slow_ma:
             if open_positions['SHORT'] > 0:
+                # La lógica de cierre de posición opuesta ya está en OrderExecutor
                 order_executor.close_strategy_short_positions_by_symbol(symbol)
             strategy = 'BUY'
 
         elif open_positions['SHORT'] == 0 and fast_ma < slow_ma:
             if open_positions['LONG'] > 0:
+                # La lógica de cierre de posición opuesta ya está en OrderExecutor
                 order_executor.close_strategy_long_positions_by_symbol(symbol)
             strategy = 'SELL'
 
@@ -116,34 +132,71 @@ class StrategyMACrossover(IStrategyManager):
 
         # Modificar la estrategia basada en el sentimiento agregado
         # Solo actuar sobre el sentimiento si hay suficientes noticias analizadas
-        if sentiment_analysis_attempted_this_tick:
+        # --- Lógica de Detección de Anomalías ---
+        if strategy != '' and anomaly_detector and anomaly_detector.trained:
+            if len(bars) >= anomaly_detector.window_size:
+                # Obtener el slice del DataFrame para la ventana de anomalías
+                # El detector de anomalías espera un slice del DataFrame, no solo los precios de cierre
+                # Seleccionará las características configuradas desde este slice.
+                window_df_slice = bars.iloc[-anomaly_detector.window_size:]
+
+                # Verificar si todas las características requeridas están presentes en window_df_slice
+                missing_features = [f for f in anomaly_detector.features if f not in window_df_slice.columns]
+                if missing_features:
+                    print(
+                        f"MA Crossover: Detección de anomalías para {symbol} omitida. "
+                        f"Características faltantes en los datos: {missing_features}"
+                    )
+                else:
+                    # El umbral está configurado dentro de la instancia anomaly_detector
+                    if anomaly_detector.is_window_anomalous(window_df_slice, threshold=None):
+                        print(
+                            (
+                                f"MA Crossover: Condición de mercado anómala detectada para {symbol} "
+                                f"en {data_event.data.name}. Suprimiendo señal {strategy}."
+                            )
+                        )
+                        strategy = ''  # Suprimir señal
+                    else:
+                        print(
+                            f"MA Crossover: Condición de mercado para {symbol} en {data_event.data.name} " +
+                            "considerada normal por el detector de anomalías."
+                        )
+            else:
+                print(
+                    f"MA Crossover: No hay suficientes barras ({len(bars)}) para la detección de anomalías " +
+                    f"(window_size: {anomaly_detector.window_size}) para {symbol}. " +
+                    "La señal procede sin verificación de anomalías."
+                )
+        # --- Fin de la Lógica de Detección de Anomalías ---
+
+        # Aplicar lógica de sentimiento solo si la estrategia no fue suprimida por anomalía
+        if strategy != '' and sentiment_analysis_attempted_this_tick:
             print(
-                f"MA Crossover: Evaluating sentiment for {symbol} for {strategy}. "
-                f"Sufficient news: {sufficient_news_for_decision}, Avg Score: {avg_sentiment_score:.2f}, "
-                f"Analyzed: {total_analyzed}"
+                f"MA Crossover: Evaluando sentimiento para {symbol} para la señal {strategy}. " +
+                f"Noticias suficientes: {sufficient_news_for_decision}, " +
+                f"Puntuación media: {avg_sentiment_score:.2f}, " +
+                f"Analizadas: {total_analyzed}"
             )
             if sufficient_news_for_decision:
                 if (
-                    strategy == 'BUY' and avg_sentiment_score > 0.1
-                ):  # Umbral de ejemplo para sentimiento negativo
+                    strategy == 'BUY'
+                    and avg_sentiment_score < -0.1
+                ):  # Sentimiento negativo fuerte, ignorar COMPRA
                     print(
-                        f"MA Crossover: BUY signal for {symbol} ignored due to overall "
-                        f"positive sentiment (Avg Score: {avg_sentiment_score:.2f})"
+                        f"MA Crossover: Señal de COMPRA para {symbol} ignorada debido a sentimiento general "
+                        f"negativo (Puntuación media: {avg_sentiment_score:.2f})"
                     )
                     strategy = ''
-                elif (  # Ejemplo: Ignorar SELL si el sentimiento es muy negativo
-                    strategy == 'SELL' and avg_sentiment_score < -0.1
-                ):  # Umbral de ejemplo para sentimiento negativo
+                elif (
+                    strategy == 'SELL'
+                    and avg_sentiment_score > 0.1
+                ):  # Sentimiento positivo fuerte, ignorar VENTA
                     print(
-                        f"MA Crossover: SELL signal for {symbol} ignored due to overall "
-                        f"negative sentiment (Avg Score: {avg_sentiment_score:.2f})"
+                        f"MA Crossover: Señal de VENTA para {symbol} ignorada debido a sentimiento general "
+                        f"positivo (Puntuación media: {avg_sentiment_score:.2f})"
                     )
                     strategy = ''
-                elif strategy != '':  # Si había una señal y no fue alterada por el sentimiento
-                    print(
-                        f"MA Crossover: Sentiment score {avg_sentiment_score:.2f} for {symbol} "
-                        f"is not strong enough to alter the '{strategy}' signal."
-                    )
             else:  # sufficient_news_for_decision es False, pero se intentó el análisis
                 print(
                     f"MA Crossover: Not enough news analyzed ({total_analyzed}) for {symbol} "
@@ -151,6 +204,7 @@ class StrategyMACrossover(IStrategyManager):
                 )
 
         if strategy != '':
+            print(f"Signal generated: StrategyType.{strategy} for {symbol}")
             strategy_event = StrategyEvent(
                 symbol=symbol,
                 strategy=strategy,
@@ -161,3 +215,4 @@ class StrategyMACrossover(IStrategyManager):
                 take_profit=0.0
             )
             return strategy_event
+        return None
