@@ -80,11 +80,11 @@ class StrategyRSI(IStrategyManager):
 
         points = mt5.symbol_info(symbol).point
 
-        # Variables para el sentimiento agregado
+        # Variables for aggregated sentiment
         avg_sentiment_score = 0.0
         sufficient_news_for_decision = False
 
-        # Controlar la frecuencia de llamadas al sentiment analyzer
+        # Control the frequency of calls to the sentiment analyzer
         if sentiment_analyzer:
             current_time = datetime.now()
             last_check_time_for_symbol = self.last_sentiment_check_time.get(symbol)
@@ -134,17 +134,17 @@ class StrategyRSI(IStrategyManager):
         else:
             strategy = ''
 
-        # Modificar la estrategia basada en el sentimiento agregado
+        # Modify the strategy based on aggregated sentiment
         if sufficient_news_for_decision:
-            # Ejemplo: si el sentimiento promedio es marcadamente negativo, no comprar.
-            if strategy == 'BUY' and avg_sentiment_score < -0.15:  # Umbral más estricto para RSI
+            # Example: if the average sentiment is markedly negative, do not buy.
+            if strategy == 'BUY' and avg_sentiment_score < -0.15:  # Stricter threshold for RSI
                 print(
                     f"RSI: BUY signal for {symbol} ignored due to strong overall NEGATIVE "
                     f"sentiment (Avg Score: {avg_sentiment_score:.2f})"
                 )
                 strategy = ''
-            # Ejemplo: si el sentimiento promedio es marcadamente positivo, no vender en corto.
-            elif strategy == 'SELL' and avg_sentiment_score > 0.15:  # Umbral más estricto para RSI
+            # Example: if the average sentiment is markedly positive, do not short sell.
+            elif strategy == 'SELL' and avg_sentiment_score > 0.15:  # Stricter threshold for RSI
                 print(
                     f"RSI: SELL signal for {symbol} ignored due to strong overall POSITIVE "
                     f"sentiment (Avg Score: {avg_sentiment_score:.2f})"

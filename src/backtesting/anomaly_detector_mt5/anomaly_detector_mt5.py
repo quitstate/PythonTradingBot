@@ -58,8 +58,8 @@ class BacktestIsolationForestAnomalyDetector:
         """
         if len(data_df) < self.window_size:
             raise ValueError(
-                f"La longitud de la serie de datos ({len(data_df)}) debe ser al menos "
-                f"igual al tamaño de la ventana ({self.window_size})."
+                f"The length of the data series ({len(data_df)}) must be at least "
+                f"equal to the window size ({self.window_size})."
             )
 
         windows = self._create_windows(data_df)
@@ -78,8 +78,8 @@ class BacktestIsolationForestAnomalyDetector:
 
     def get_anomaly_score_for_window(self, window_data_df_slice: pd.DataFrame):
         """
-        Calcula el score de anomalía para una única ventana de datos.
-        window_data_df_slice: un slice del DataFrame original que representa una ventana.
+        Calculates the anomaly score for a single window of data.
+        window_data_df_slice: A slice of the original DataFrame representing a window.
         """
         if not self.trained:
             raise RuntimeError("The model has not been trained. Call fit() first.")
@@ -98,12 +98,12 @@ class BacktestIsolationForestAnomalyDetector:
         return score  # Determines if a data window is anomalous based on a threshold.
 
     def is_window_anomalous(self, window_data_df_slice: pd.DataFrame, threshold: float):
-        """Determina si una ventana de datos es anómala basándose en un umbral."""
+        """Determines if a data window is anomalous based on a threshold."""
         if self.threshold is None and threshold is None:
             raise ValueError(
-                "El umbral no ha sido establecido. "
-                "Llama a set_threshold_from_train_data() o provee un umbral."
-            )  # The threshold has not been set. Call set_threshold_from_train_data() or provide a threshold.
+                "The threshold has not been set. "
+                "Call set_threshold_from_train_data() or provide a threshold."
+            )
         current_threshold = threshold if threshold is not None else self.threshold
         score = self.get_anomaly_score_for_window(window_data_df_slice)
         return score > current_threshold
@@ -118,11 +118,11 @@ class BacktestIsolationForestAnomalyDetector:
 
         current_threshold = threshold if threshold is not None else self.threshold
         if current_threshold is None:
-            raise ValueError("El umbral no ha sido establecido ni provisto.")
+            raise ValueError("The threshold has not been set or provided.")
 
         if len(data_df) < self.window_size:
-            print("No hay suficientes datos en la serie para formar ventanas.")
-            return []  # Not enough data in the series to form windows.
+            print("Not enough data in the series to form windows.")
+            return []
 
         anomalies_detected = []
         for i in range(len(data_df) - self.window_size + 1):
@@ -150,68 +150,3 @@ class BacktestIsolationForestAnomalyDetector:
             f"(based on the {percentile} percentile of training decision scores)"
         )
         return self.threshold  # Example usage:
-
-
-# Ejemplo de uso:
-if __name__ == "__main__":
-    # Simula datos de series temporales con las columnas especificadas
-    data = {
-        'open': np.random.rand(100) * 10 + 100,
-        'high': np.random.rand(100) * 10 + 105,
-        'low': np.random.rand(100) * 10 + 95,
-        'close': np.random.rand(100) * 10 + 100,
-        'tickvol': np.random.randint(100, 1000, 100),
-        'vol': np.random.randint(1000, 10000, 100),
-        'spread': np.random.randint(1, 5, 100)
-    }
-    # Add some simulated anomalies
-    data['close'][20:23] = data['close'][20:23] * 1.2  # Anomalous increase
-    data['tickvol'][50:53] = data['tickvol'][50:53] * 5  # Anomalous volume
-    data['low'][70:73] = data['low'][70:73] * 0.8  # Anomalous drop
-
-    data_df = pd.DataFrame(data)
-    # Ensure 'high' is always >= 'open' and 'close', and 'low' <= 'open' and 'close'
-    data_df['high'] = data_df[['open', 'close', 'high']].max(axis=1)
-    data_df['low'] = data_df[['open', 'close', 'low']].min(axis=1)
-
-    window_s = 5  # Analyze windows of 5 time steps
-
-    # List of features to use by the detector
-    features_to_use = ['open', 'high', 'low', 'close', 'tickvol']
-
-    detector = BacktestIsolationForestAnomalyDetector(
-        window_size=window_s,
-        features=features_to_use,
-        random_state=42
-    )  # Train the model
-
-    # For a real scenario, use a period of "normal" data for training
-    print(f"Training Isolation Forest with window_size={window_s}...")
-    # Use a portion of the data for training, simulating normal data
-    train_data_df = data_df.iloc[:80]  # Use the first 80 points for training
-    detector.fit(train_data_df)
-
-    # Establecer el umbral basado en los scores de decisión de los datos de entrenamiento
-    threshold = detector.set_threshold_from_train_data(
-        percentile=95
-    )  # Umbral más alto para detectar anomalías más evidentes
-
-    print(
-        f"\nDetectando anomalías en la serie completa usando "
-        f"window_size={window_s} y umbral={threshold:.5f}:"
-    )
-    # Detectar anomalías en la serie completa
-    anomalies_info = detector.detect_anomalies_in_series(data_df, threshold)
-    # Detecting anomalies in the full series using
-    if not anomalies_info:  # No windows were created for analysis or no anomalies were detected.
-        print("No windows were created for analysis or no anomalies were detected.")
-    else:
-        for i, window, score, is_anom in anomalies_info:
-            # window is a list of lists (window_size x num_features)
-            # To print, we can show a summary or the first features of the first row
-            # of the window
-            first_step_features = ", ".join([f"{val:.2f}" for val in window[0]])
-            print(
-                f"Ventana desde índice {i} (primer paso: [{first_step_features}, ...]): "
-                f"Score={score:.5f} {'<- ANOMALÍA DETECTADA' if is_anom else ''}"
-            )
