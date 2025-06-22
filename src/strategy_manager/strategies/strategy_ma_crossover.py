@@ -1,6 +1,7 @@
+from backtesting.anomaly_detector_mt5.anomaly_detector_mt5 import BacktestIsolationForestAnomalyDetector
 from backtesting.sentiment_analyzer_mt5.sentiment_analyzer_mt5 import BacktestSentimentAnalyzer
 from portfolio.portfolio import Portfolio
-from anomaly_detector.anomaly_detector import IsolationForestAnomalyDetector  # + Añadir import
+from anomaly_detector.anomaly_detector import IsolationForestAnomalyDetector
 from ..interfaces.strategy_manager_interface import IStrategyManager
 from data_source.data_source import DataSource
 from events.events import DataEvent, StrategyEvent
@@ -34,7 +35,11 @@ class StrategyMACrossover(IStrategyManager):
         portfolio: Portfolio,
         order_executor: OrderExecutor,
         sentiment_analyzer: SentimentAnalyzer | BacktestSentimentAnalyzer | None = None,
-        anomaly_detector: IsolationForestAnomalyDetector | None = None
+        anomaly_detector: (
+            IsolationForestAnomalyDetector
+            | BacktestIsolationForestAnomalyDetector
+            | None
+        ) = None
     ) -> StrategyEvent | None:  # La estrategia puede no devolver nada
         symbol = data_event.symbol
 
