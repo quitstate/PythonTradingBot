@@ -16,27 +16,27 @@ class DataDisplayMT5:
         self.trade_log = trade_log_df.copy()
         self.initial_balance = initial_balance
 
-        # Convertir columnas de tiempo si existen, manejando posibles errores o NaT
+        # Convert time columns if they exist, handling potential errors or NaT
         if 'entry_time' in self.trade_log.columns:
             self.trade_log['entry_time'] = pd.to_datetime(self.trade_log['entry_time'], errors='coerce')
         if 'exit_time' in self.trade_log.columns:
             self.trade_log['exit_time'] = pd.to_datetime(self.trade_log['exit_time'], errors='coerce')
 
-        # Crear un DataFrame solo con trades ejecutados para cálculos de rendimiento y
-        # plots de equidad/drawdown
+        # Create a DataFrame with only executed trades for performance calculations and
+        # equity/drawdown plots
         self.executed_trades_log = self.trade_log[self.trade_log['profit'].notna()].copy()
 
         if not self.executed_trades_log.empty and 'profit' in self.executed_trades_log.columns:
-            # Asegurar que exit_time en executed_trades_log es datetime y está ordenado para cumsum
+            # Ensure that exit_time in executed_trades_log is datetime and sorted for cumsum
             if 'exit_time' in self.executed_trades_log.columns:
                 self.executed_trades_log['exit_time'] = pd.to_datetime(self.executed_trades_log['exit_time'])
-                # Solo ordenar si no hay NaT, o manejarlos.
+                # Only sort if there are no NaTs, or handle them.
                 if not self.executed_trades_log['exit_time'].isna().any():
                     self.executed_trades_log.sort_values(by='exit_time', inplace=True)
                 else:
                     print(
-                        "Advertencia: Hay NaT en 'exit_time' para trades ejecutados; "
-                        "la curva de equidad podría no ser precisa."
+                        "Warning: There are NaTs in 'exit_time' for executed trades; "
+                        "the equity curve may not be accurate."
                     )
 
             self.executed_trades_log['equity_after_trade'] = (
@@ -50,15 +50,15 @@ class DataDisplayMT5:
                 equity_curve - self.executed_trades_log['peak_equity']
             )
             self.executed_trades_log['drawdown_percent'] = np.where(
-                self.executed_trades_log['peak_equity'].fillna(0) != 0,  # Evitar división por cero/NaN
+                self.executed_trades_log['peak_equity'].fillna(0) != 0,  # Avoid division by zero/NaN
                 (
                     self.executed_trades_log['drawdown_dollars']
                     / self.executed_trades_log['peak_equity']
                 ) * 100,
-                0.0  # O np.nan si se prefiere
+                0.0  # Or np.nan if preferred
             )
         else:
-            # Si no hay trades ejecutados, inicializar executed_trades_log con columnas esperadas
+            # If there are no executed trades, initialize executed_trades_log with expected columns
             expected_cols = [
                 'entry_time', 'exit_time', 'profit', 'equity_after_trade',
                 'peak_equity', 'drawdown_dollars', 'drawdown_percent'
@@ -79,14 +79,14 @@ class DataDisplayMT5:
             return
 
         plt.figure(figsize=(12, 6))
-        plt.plot(df_plot['exit_time'], df_plot['equity_after_trade'], label="Equidad")
+        plt.plot(df_plot['exit_time'], df_plot['equity_after_trade'], label="Equity")
 
         winning_trades = df_plot[df_plot['profit'] > 0]
         losing_trades = df_plot[df_plot['profit'] <= 0]
 
         plt.scatter(
             winning_trades['exit_time'].dropna(),
-            winning_trades['equity_after_trade'].dropna(),  # dropna para evitar errores con NaT
+            winning_trades['equity_after_trade'].dropna(),  # dropna to avoid errors with NaT
             color='green',
             marker='^',
             label='Winning Trades',
@@ -95,7 +95,7 @@ class DataDisplayMT5:
         )
         plt.scatter(
             losing_trades['exit_time'].dropna(),
-            losing_trades['equity_after_trade'].dropna(),  # dropna para evitar errores con NaT
+            losing_trades['equity_after_trade'].dropna(),  # dropna to avoid errors with NaT
             color='red',
             marker='v',
             label='Losing/Neutral Trades',
@@ -155,13 +155,13 @@ class DataDisplayMT5:
             return
         plt.figure(figsize=(12, 6))
         plt.plot(
-            df_plot['exit_time'].dropna(),  # dropna para evitar errores con NaT
+            df_plot['exit_time'].dropna(),
             df_plot['drawdown_dollars'].dropna(),
             label="Drawdown ($)",
             color='red'
         )
         plt.fill_between(
-            df_plot['exit_time'].dropna(),  # dropna para evitar errores con NaT
+            df_plot['exit_time'].dropna(),
             df_plot['drawdown_dollars'].dropna(),
             0,
             color='red',
@@ -182,45 +182,45 @@ class DataDisplayMT5:
         metrics: Dict[str, Any] = {}
         # Usar self.trade_log para métricas generales (incluyendo canceladas)
         df_all_attempts = self.trade_log
-        # Usar self.executed_trades_log para métricas de rendimiento de trades ejecutados
+        # Use self.executed_trades_log for performance metrics of executed trades
         df_executed = self.executed_trades_log
 
-        metrics["Total Intentos Registrados"] = len(df_all_attempts)
-        if metrics["Total Intentos Registrados"] == 0:
-            # Si no hay intentos registrados, no se pueden calcular otras métricas.
-            # Actualizar el mensaje para ser más genérico.
-            metrics["Message"] = "No se registraron intentos de operación."
+        metrics["Total Attempts Registered"] = len(df_all_attempts)
+        if metrics["Total Attempts Registered"] == 0:
+            # If there are no registered attempts, other metrics cannot be calculated.
+            # Update the message to be more generic.
+            metrics["Message"] = "No trade attempts were recorded."
             return {}
 
-        # Nueva métrica: Operaciones canceladas por el sentiment analyzer
+        # New metric: Trades canceled by the sentiment analyzer
         if "cancellation_reason" in df_all_attempts.columns:
             cancelled_by_sentiment = df_all_attempts[
                 df_all_attempts["cancellation_reason"] == "SENTIMENT_ANALYZER"
             ]
-            metrics["Operaciones Canceladas por Sentiment Analyzer"] = (
+            metrics["Trades Canceled by Sentiment Analyzer"] = (
                 len(cancelled_by_sentiment)
             )
         else:
-            metrics["Operaciones Canceladas por Sentiment Analyzer"] = (
-                "N/A (columna 'cancellation_reason' no disponible)"
+            metrics["Trades Canceled by Sentiment Analyzer"] = (
+                "N/A ('cancellation_reason' column not available)"
             )
 
         # Métricas basadas en trades ejecutados
-        metrics["Total Operaciones Ejecutadas"] = len(df_executed)
+        metrics["Total Executed Trades"] = len(df_executed)
 
-        if metrics["Total Operaciones Ejecutadas"] > 0:
+        if metrics["Total Executed Trades"] > 0:
             if 'profit' not in df_executed.columns:
                 print(
-                    "Advertencia: 'profit' column is missing in executed_trades_log for performance metrics."
+                    "Warning: 'profit' column is missing in executed_trades_log for performance metrics."
                 )
-                # Inicializar métricas de rendimiento a N/A o 0 si 'profit' no está
+                # Initialize performance metrics to N/A or 0 if 'profit' is not present
                 metrics.update({
                     "Total Profit/Loss": "N/A", "Gross Profit": "N/A", "Gross Loss": "N/A",
                     "Winning Trades": "N/A", "Losing/Neutral Trades": "N/A", "Win Rate (%)": "N/A",
                     "Average Win ($)": "N/A", "Average Loss ($)": "N/A", "Profit Factor": "N/A",
                     "Max Drawdown ($)": "N/A", "Max Drawdown (%)": "N/A", "Sharpe Ratio (simplificado)": "N/A"
                 })
-                return metrics  # Retornar si no hay 'profit' en trades ejecutados
+                return metrics  # Return if 'profit' is not in executed trades
 
             metrics["Total Profit/Loss"] = df_executed['profit'].sum()
             metrics["Gross Profit"] = df_executed[df_executed['profit'] > 0]['profit'].sum()
@@ -234,8 +234,8 @@ class DataDisplayMT5:
             metrics["Losing/Neutral Trades"] = len(losing_neutral_trades_df)  # Usar la cuenta correcta
 
             metrics["Win Rate (%)"] = (
-                (metrics["Winning Trades"] / metrics["Total Operaciones Ejecutadas"]) * 100
-                if metrics["Total Operaciones Ejecutadas"] > 0 else 0
+                (metrics["Winning Trades"] / metrics["Total Executed Trades"]) * 100
+                if metrics["Total Executed Trades"] > 0 else 0
             )
 
             metrics["Average Win ($)"] = (
@@ -265,7 +265,7 @@ class DataDisplayMT5:
                 else "N/A"
             )
 
-            if len(df_executed['profit']) > 1:  # Necesita al menos 2 trades para std dev
+            if len(df_executed['profit']) > 1:  # Needs at least 2 trades for std dev
                 initial_balance_val = (
                     self.initial_balance
                     if isinstance(self.initial_balance, (int, float)) and self.initial_balance != 0
@@ -273,19 +273,19 @@ class DataDisplayMT5:
                 )
                 returns = df_executed['profit'] / initial_balance_val
                 if returns.std() != 0 and not np.isnan(returns.std()):
-                    sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252)  # Asumiendo datos diarios
+                    sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252)  # Assuming daily data
                 else:
-                    sharpe_ratio = 0 if returns.mean() == 0 else np.inf  # o manejar de otra forma si std es 0
-                metrics["Sharpe Ratio (simplificado)"] = sharpe_ratio
+                    sharpe_ratio = 0 if returns.mean() == 0 else np.inf  # or handle otherwise if std is 0
+                metrics["Sharpe Ratio (simplified)"] = sharpe_ratio
             else:
-                metrics["Sharpe Ratio (simplificado)"] = "N/A (datos insuficientes)"
+                metrics["Sharpe Ratio (simplified)"] = "N/A (insufficient data)"
         else:
-            # No hay operaciones ejecutadas, inicializar métricas de rendimiento
+            # No executed trades, initialize performance metrics
             metrics.update({
                 "Total Profit/Loss": 0, "Gross Profit": 0, "Gross Loss": 0,
                 "Winning Trades": 0, "Losing/Neutral Trades": 0, "Win Rate (%)": 0,
                 "Average Win ($)": 0, "Average Loss ($)": 0, "Profit Factor": "N/A",
-                "Max Drawdown ($)": "N/A", "Max Drawdown (%)": "N/A", "Sharpe Ratio (simplificado)": "N/A"
+                "Max Drawdown ($)": "N/A", "Max Drawdown (%)": "N/A", "Sharpe Ratio (simplified)": "N/A"
             })
 
         return metrics
