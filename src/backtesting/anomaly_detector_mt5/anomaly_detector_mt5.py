@@ -150,3 +150,32 @@ class BacktestIsolationForestAnomalyDetector:
             f"(based on the {percentile} percentile of training decision scores)"
         )
         return self.threshold  # Example usage:
+
+    def get_model_metrics(self):
+        """
+        Returns a dictionary with the model's configuration and current state metrics.
+        """
+        metrics = {
+            'model_type': 'IsolationForest',
+            'window_size': self.window_size,
+            'n_estimators': self.model.n_estimators,
+            'contamination': self.model.contamination,
+            'max_samples': self.model.max_samples,
+            'random_state': self.model.random_state,
+            'features': self.features,
+            'num_features_per_timestep': self.num_features_per_timestep,
+            'trained': self.trained,
+            'threshold': self.threshold
+        }
+        if self.trained and len(self.decision_scores_train) > 0:
+            metrics['training_data_decision_scores'] = {
+                'count': len(self.decision_scores_train),
+                'mean': float(np.mean(self.decision_scores_train)),
+                'std_dev': float(np.std(self.decision_scores_train)),
+                'min': float(np.min(self.decision_scores_train)),
+                'max': float(np.max(self.decision_scores_train))
+            }
+        else:
+            metrics['training_data_decision_scores'] = None
+
+        return metrics
