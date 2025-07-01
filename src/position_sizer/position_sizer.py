@@ -1,6 +1,6 @@
 
-from events.events import SignalEvent, SizingEvent
-from data_provider.data_provider import DataProvider
+from events.events import StrategyEvent, SizingEvent
+from data_source.data_source import DataSource
 from .properties.position_sizer_properties import (
     BaseSizingProps,
     FixedSizingProps,
@@ -18,9 +18,9 @@ from queue import Queue
 
 class PositionSizer(IPositionSizer):
 
-    def __init__(self, events_queue: Queue, data_provider: DataProvider, sizing_properties: BaseSizingProps):
+    def __init__(self, events_queue: Queue, data_source: DataSource, sizing_properties: BaseSizingProps):
         self.events_queue = events_queue
-        self.DATA_PROVIDER = data_provider
+        self.data_source = data_source
         self.position_sizing_method = self._get_position_sizing_method(sizing_properties)
 
     def _get_position_sizing_method(self, sizing_properties: BaseSizingProps) -> IPositionSizer:
@@ -37,27 +37,27 @@ class PositionSizer(IPositionSizer):
         else:
             raise ValueError(f"Unknown sizing properties type: {type(sizing_properties)}")
 
-    def _create_and_put_sizing_event(self, signal_event: SignalEvent, volume: float) -> None:
+    def _create_and_put_sizing_event(self, strategy_event: StrategyEvent, volume: float) -> None:
 
         sizing_event = SizingEvent(
-            symbol=signal_event.symbol,
-            signal=signal_event.signal,
-            target_order=signal_event.target_order,
-            target_price=signal_event.target_price,
-            magic_number=signal_event.magic_number,
-            stop_loss=signal_event.stop_loss,
-            take_profit=signal_event.take_profit,
+            symbol=strategy_event.symbol,
+            strategy=strategy_event.strategy,
+            target_order=strategy_event.target_order,
+            target_price=strategy_event.target_price,
+            magic_number=strategy_event.magic_number,
+            stop_loss=strategy_event.stop_loss,
+            take_profit=strategy_event.take_profit,
             volume=volume,
         )
         self.events_queue.put(sizing_event)
 
-    def size_signal(self, signal_event: SignalEvent) -> None:
+    def size_strategy(self, strategy_event: StrategyEvent) -> None:
 
-        volume = self.position_sizing_method.size_signal(signal_event, self.DATA_PROVIDER)
+        volume = self.position_sizing_method.size_strategy(strategy_event, self.data_source)
 
-        if volume < mt5.symbol_info(signal_event.symbol).volume_min:
-            volume = mt5.symbol_info(signal_event.symbol).volume_min
-        elif volume > mt5.symbol_info(signal_event.symbol).volume_max:
-            volume = mt5.symbol_info(signal_event.symbol).volume_max
+        if volume < mt5.symbol_info(strategy_event.symbol).volume_min:
+            volume = mt5.symbol_info(strategy_event.symbol).volume_min
+        elif volume > mt5.symbol_info(strategy_event.symbol).volume_max:
+            volume = mt5.symbol_info(strategy_event.symbol).volume_max
 
-        self._create_and_put_sizing_event(signal_event, volume)
+        self._create_and_put_sizing_event(strategy_event, volume)

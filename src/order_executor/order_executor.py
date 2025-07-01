@@ -1,6 +1,6 @@
 from portfolio.portfolio import Portfolio
 from queue import Queue
-from events.events import OrderEvent, ExecutionEvent, PlacedPendingOrderEvent, SignalType
+from events.events import OrderEvent, ExecutionEvent, PlacedPendingOrderEvent, StrategyType
 from datetime import datetime
 from utils.utils import Utils
 import pandas as pd
@@ -28,9 +28,9 @@ class OrderExecutor():
         """
         Execute the market order by sending it to the broker.
         """
-        if order_event.signal == "BUY":
+        if order_event.strategy == "BUY":
             order_type = mt5.ORDER_TYPE_BUY
-        elif order_event.signal == "SELL":
+        elif order_event.strategy == "SELL":
             order_type = mt5.ORDER_TYPE_SELL
         else:
             raise ValueError("Invalid order type. Must be 'BUY' or 'SELL'.")
@@ -53,14 +53,14 @@ class OrderExecutor():
 
         if self._check_execution_status(result):
             print(
-                f"Market order executed successfully. {order_event.signal} for {order_event.symbol} "
+                f"Market order executed successfully. {order_event.strategy} for {order_event.symbol} "
                 f"at {result.price} with {result.volume} volume"
             )
             self._create_and_put_execution_event(result)
 
         else:
             print(
-                f"Market order execution failed. {order_event.signal} for "
+                f"Market order execution failed. {order_event.strategy} for "
                 f"{order_event.symbol}: {result.comment}"
             )
 
@@ -69,9 +69,9 @@ class OrderExecutor():
         Send a pending order to the broker.
         """
         if order_event.target_order == "STOP":
-            order_type = mt5.ORDER_BUY_STOP if order_event.signal == "BUY" else mt5.ORDER_SELL_STOP
+            order_type = mt5.ORDER_BUY_STOP if order_event.strategy == "BUY" else mt5.ORDER_SELL_STOP
         elif order_event.target_order == "LIMIT":
-            order_type = mt5.ORDER_BUY_LIMIT if order_event.signal == "BUY" else mt5.ORDER_SELL_LIMIT
+            order_type = mt5.ORDER_BUY_LIMIT if order_event.strategy == "BUY" else mt5.ORDER_SELL_LIMIT
         else:
             raise Exception(f"ORD EXEC: the pending order {order_event.target_order} is not valid")
 
@@ -94,14 +94,14 @@ class OrderExecutor():
 
         if self._check_execution_status(result):
             print(
-                f"Pending order executed successfully. {order_event.signal} {order_event.target_order} "
+                f"Pending order executed successfully. {order_event.strategy} {order_event.target_order} "
                 f"for {order_event.symbol} at {order_event.target_price} with {order_event.volume} volume"
             )
             self._create_and_put_placed_pending_order_event(order_event)
 
         else:
             print(
-                f"Pending order execution failed. {order_event.signal} for "
+                f"Pending order execution failed. {order_event.strategy} for "
                 f"{order_event.symbol}: {result.comment}"
             )
 
@@ -230,7 +230,7 @@ class OrderExecutor():
         """
         placed_pending_order_event = PlacedPendingOrderEvent(
             symbol=order_event.symbol,
-            signal=order_event.signal,
+            strategy=order_event.strategy,
             target_order=order_event.target_order,
             target_price=order_event.target_price,
             magic_number=order_event.magic_number,
@@ -292,7 +292,11 @@ class OrderExecutor():
         # Create the execution event
         execution_event = ExecutionEvent(
             symbol=order_result.request.symbol,
-            signal=SignalType.BUY if order_result.request.type == mt5.DEAL_TYPE_BUY else SignalType.SELL,
+            strategy=(
+                StrategyType.BUY
+                if order_result.request.type == mt5.DEAL_TYPE_BUY
+                else StrategyType.SELL
+            ),
             fill_price=order_result.price,
             fill_time=fill_time if not deal else pd.to_datetime(deal.time_msc, unit='ms'),
             volume=order_result.request.volume

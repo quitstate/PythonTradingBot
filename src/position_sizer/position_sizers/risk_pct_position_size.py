@@ -1,5 +1,5 @@
-from events.events import SignalEvent
-from data_provider.data_provider import DataProvider
+from events.events import StrategyEvent
+from data_source.data_source import DataSource
 from ..interfaces.position_sizer_interface import IPositionSizer
 from ..properties.position_sizer_properties import RiskPctSizingProps
 from utils.utils import Utils
@@ -11,25 +11,25 @@ class RiskPctPositionSizer(IPositionSizer):
     def __init__(self, properties: RiskPctSizingProps):
         self.risk_pct = properties.risk_pct
 
-    def size_signal(self, signal_event: SignalEvent, data_provider: DataProvider) -> float:
+    def size_strategy(self, strategy_event: StrategyEvent, data_source: DataSource) -> float:
 
         if self.risk_pct <= 0.0:
             raise ValueError("Risk percentage must be greater than 0.")
 
-        if signal_event.stop_loss <= 0.0:
+        if strategy_event.stop_loss <= 0.0:
             raise ValueError("Stop loss must be greater than 0.")
 
         account_info = mt5.account_info()
         if account_info is None:
             raise ValueError("Failed to retrieve account information.")
 
-        symbol_info = mt5.symbol_info(signal_event.symbol)
+        symbol_info = mt5.symbol_info(strategy_event.symbol)
 
-        if signal_event.target_order == "MARKET":
-            last_tick = data_provider.get_latest_tick(signal_event.symbol)
-            entry_price = last_tick['ask'] if signal_event.signal == "BUY" else last_tick['bid']
+        if strategy_event.target_order == "MARKET":
+            last_tick = data_source.get_latest_tick(strategy_event.symbol)
+            entry_price = last_tick['ask'] if strategy_event.strategy == "BUY" else last_tick['bid']
         else:
-            entry_price = signal_event.target_price
+            entry_price = strategy_event.target_price
 
         equity = account_info.equity
         volume_step = symbol_info.volume_step
@@ -45,7 +45,7 @@ class RiskPctPositionSizer(IPositionSizer):
         )
 
         try:
-            price_distance_in_integer_ticksizes = int(abs(entry_price - signal_event.stop_loss) / tick_size)
+            price_distance_in_integer_ticksizes = int(abs(entry_price - strategy_event.stop_loss) / tick_size)
             monetary_risk = equity * self.risk_pct
             volume = monetary_risk / (price_distance_in_integer_ticksizes * tick_value_account_currency)
             volume = round(volume / volume_step) * volume_step

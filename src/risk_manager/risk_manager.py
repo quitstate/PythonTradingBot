@@ -1,5 +1,5 @@
 from .interfaces.risk_manager_interface import IRiskManager
-from data_provider.data_provider import DataProvider
+from data_source.data_source import DataSource
 from portfolio.portfolio import Portfolio
 from .properties.risk_manager_properties import BaseRiskProps, MaxLeverageFactorRiskProps
 from .risk_managers.max_leverage_factor_risk_manager import MaxLeverageFactorRiskManager
@@ -18,7 +18,7 @@ class RiskManager(IRiskManager):
     def __init__(
         self,
         events_queue: Queue,
-        data_provider: DataProvider,
+        data_source: DataSource,
         portfolio: Portfolio,
         risk_properties: BaseRiskProps
     ):
@@ -26,7 +26,7 @@ class RiskManager(IRiskManager):
         Initialize the RiskManager with the given configuration.
         """
         self.events_queue = events_queue
-        self.DATA_PROVIDER = data_provider
+        self.DATA_SOURCE = data_source
         self.PORTFOLIO = portfolio
         self.risk_management_method = self._get_risk_management_method(risk_properties)
 
@@ -66,7 +66,7 @@ class RiskManager(IRiskManager):
         symbol_info = mt5.symbol_info(symbol)
         trade_unit = volume * symbol_info.trade_contract_size
 
-        value_traded_in_profit_currency = trade_unit * self.DATA_PROVIDER.get_latest_tick(symbol)['bid']
+        value_traded_in_profit_currency = trade_unit * self.DATA_SOURCE.get_latest_tick(symbol)['bid']
 
         value_traded_in_account_currency = Utils.convert_currency_amount_to_another_currency(
             value_traded_in_profit_currency,
@@ -87,7 +87,7 @@ class RiskManager(IRiskManager):
         """
         order_event = OrderEvent(
             symbol=sizing_event.symbol,
-            signal=sizing_event.signal,
+            strategy=sizing_event.strategy,
             target_order=sizing_event.target_order,
             target_price=sizing_event.target_price,
             magic_number=sizing_event.magic_number,
@@ -101,7 +101,7 @@ class RiskManager(IRiskManager):
 
         current_position_value = self._compute_current_value_of_position_in_account_currency()
 
-        position_type = mt5.ORDER_TYPE_BUY if sizing_event.signal == 'BUY' else mt5.ORDER_TYPE_SELL
+        position_type = mt5.ORDER_TYPE_BUY if sizing_event.strategy == 'BUY' else mt5.ORDER_TYPE_SELL
 
         new_position_value = self._compute_value_of_position_in_account_currency(
             sizing_event.symbol,
